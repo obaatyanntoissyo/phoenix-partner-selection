@@ -1,0 +1,43 @@
+# ローカル確認用。起動手順は README を参照。
+services:
+  app:
+    build: ./docker
+    ports: ["8000:80"]
+    volumes: [".:/var/www/html"]
+    env_file: .env
+    environment:
+      DB_HOST: db
+      MAIL_HOST: mailpit
+      APP_URL: http://localhost:8000
+    depends_on: [db, mailpit]
+
+  # メール送信待ちの処理（本番では CRON で schedule:run を毎分実行）
+  worker:
+    build: ./docker
+    command: php artisan schedule:work
+    volumes: [".:/var/www/html"]
+    env_file: .env
+    environment:
+      DB_HOST: db
+      MAIL_HOST: mailpit
+      APP_URL: http://localhost:8000
+    depends_on: [db, mailpit]
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: partner
+      MYSQL_USER: partner
+      MYSQL_PASSWORD: partner
+      MYSQL_ROOT_PASSWORD: root
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes: ["db-data:/var/lib/mysql", "./docker/mysql-init:/docker-entrypoint-initdb.d"]
+    ports: ["3306:3306"]
+
+  # 開発用の受信箱 http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    ports: ["8025:8025", "1025:1025"]
+
+volumes:
+  db-data:
