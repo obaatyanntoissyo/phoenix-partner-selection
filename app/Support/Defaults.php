@@ -3,7 +3,7 @@
 namespace App\Support;
 
 /**
- * 初期データ。金額の上限・予約URL・通知先などの未確定値はここに置かない（null のまま）。
+ * 初期データ。予約URL・通知先などの未確定値はここに置かない（null のまま）。
  */
 class Defaults
 {

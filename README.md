@@ -22,22 +22,24 @@
 
 ### Docker を使う場合（おすすめ）
 
-Docker Desktop が必要です。
+Docker Desktop が必要です（Windows・Mac どちらでも可）。
 
 ```bash
 cp .env.example .env
+docker compose run --rm composer install            # 依存パッケージを入れる（初回のみ）
 docker compose up -d --build
-docker compose exec app composer install
+docker compose exec app chmod -R a+rwX storage bootstrap/cache   # Mac・Linux で書き込みエラーが出る場合
 docker compose exec app php artisan key:generate
 docker compose exec app php artisan migrate
-docker compose exec app php artisan db:seed --class=DevSeeder   # 開発用管理者とテスト用の仮基準を投入
+docker compose exec app php artisan db:seed --class=DevSeeder   # 開発用管理者・テスト予約画面・通知先を投入
 ```
 
 - 応募画面：<http://localhost:8000/apply/partner>（②は `/apply/8341`）
-- 管理画面：<http://localhost:8000/admin>（DevSeeder 実行時に表示されたメール・パスワードでログイン）
-- 受信箱（Mailpit）：<http://localhost:8025>
+- 管理画面：<http://localhost:8000/admin>（DevSeeder 実行時に1回だけ表示されるメール・パスワードでログイン）
+- 受信箱（Mailpit）：<http://localhost:8025>（応募者・社内あてのメールはすべてここに届き、外部には送られません）
+- 自動テスト：`docker compose exec app php artisan test`
 
-> Docker 構成はこの開発環境では起動確認できていません（下の「テスト結果」参照）。動かない場合は次の方法で起動できます。
+ポート 3306・8000・8025 を他のソフトが使っていると起動できません。その場合は該当のソフトを止めてから起動してください。
 
 ### PHP を直接使う場合
 
@@ -67,7 +69,9 @@ php artisan partner:create-admin you@example.co.jp "管理者名"
 
 ### テストデータ
 
-`DevSeeder` は、開発用管理者・**テスト用の仮基準**（総額上限 1,500,000円、本番値ではありません）・予約先（テスト予約画面）・通知先を入れます。応募は画面から登録してください。
+`DevSeeder` は、開発用管理者・予約先（テスト予約画面）・通知先を入れます。応募は画面から登録してください。
+
+見積の総額上限は、初期設定で **800,000円（税別）** です（2026-10-21 のご指定による暫定値）。上限と同額までは通過、800,001円以上は不通過です。管理画面の「設定」で変更できます。
 
 ## テスト
 
@@ -94,7 +98,8 @@ MySQL のテスト用DB `partner_test` を使います（`phpunit.xml`）。Dock
 
 - ブラウザ（Chromium・スマートフォン幅）での通し確認：①応募 → 見積入力・一時保存 → 確認 → 提出 → 通過 → 予約案内 → テスト予約画面への移動、不通過者の結果画面と予約URL取得の拒否（403）、入力エラーの表示、管理画面の表示を確認しました。
 - `composer audit`：既知の脆弱性なし。
-- **未実施**：Docker Compose での起動（この環境では Docker を動かせないため）、Mailpit での受信確認（代わりにログ出力で送信内容を確認）、さくらのレンタルサーバへの設置、実際のメールサーバー・予約先との接続。
+- Docker Compose（Linux 上の Docker）での起動：上の手順で起動し、総額800,000円ちょうどの見積が通過して予約案内に進むこと、不通過時に予約URLが取得できないこと（403）、Mailpit に受付・結果・社内通知メールが届くことを確認しました。自動テスト58件も Docker 内で成功しています。
+- **未実施**：Windows・Mac の Docker Desktop での起動、さくらのレンタルサーバへの設置、実際のメールサーバー・予約先との接続。
 
 ## 設定の変更方法
 
@@ -134,7 +139,7 @@ MySQL のテスト用DB `partner_test` を使います（`phpunit.xml`）。Dock
 
 管理画面ホームの「本番公開前に設定が必要な項目」にも一覧が出ます。
 
-- 見積総額の上限（未設定の間は見積を受け付けず、応募者には「現在手続きを進められません」と表示）
+- 見積総額の上限の最終確認（現在は暫定の 800,000円。上限を空欄にすると見積を受け付けず、応募者には「現在手続きを進められません」と表示）
 - 見積条件の未設定項目（ページ数、想定納期など）
 - 面談予約先URL、社内通知先メール
 - プライバシーポリシーURLと版、応募情報の保存期間

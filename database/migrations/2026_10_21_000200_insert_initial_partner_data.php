@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    // 初期の募集設定・テンプレート・設定キー。上限額や予約URLは未設定（null）のまま入れる。
+    // 初期の募集設定・テンプレート・設定キー。予約URLなどの未確定値は未設定（null）のまま入れる。
     public function up(): void
     {
         $now = now();
@@ -16,11 +16,11 @@ return new class extends Migration
             'mockup_links' => json_encode(Defaults::mockupLinks(), JSON_UNESCAPED_UNICODE),
             'scope_items' => json_encode(Defaults::scopeItems(), JSON_UNESCAPED_UNICODE),
             'estimate_items' => json_encode(Defaults::estimateItems(), JSON_UNESCAPED_UNICODE),
-            'total_cap' => null,
+            'total_cap' => 800_000, // 2026-10-21 ご依頼者の指定による暫定の総額上限（税別）。管理画面で変更可
             'item_caps_enabled' => false,
             'invite_ttl_days' => 14,
             'is_test_criteria' => false,
-            'note' => '初期版（総額上限は未設定）',
+            'note' => '初期版（総額上限 800,000円・暫定）',
             'created_at' => $now,
         ]);
 
