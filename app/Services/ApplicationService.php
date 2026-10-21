@@ -51,7 +51,9 @@ class ApplicationService
             $token = null;
             if ($category === Application::P1) {
                 Interview::create(['application_id' => $application->id]);
-                if (! $previous && $sendInvite) {
+                // 同じメールの再応募は既存へ紐付ける。招待を自動で出すかは設定で選ぶ（管理者の手動登録では出さない）
+                $reapplyDirect = $source !== 'admin' && AppSetting::get('reapply_mode', 'hold') === 'direct';
+                if ((! $previous || $reapplyDirect) && $sendInvite) {
                     $token = $this->invitations->issue($application, $adminId);
                     $application->refresh();
                     $this->mail->enqueue(
