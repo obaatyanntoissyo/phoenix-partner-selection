@@ -48,6 +48,7 @@ docker compose exec app php artisan db:seed --class=DevSeeder   # 開発用管�
   ```bash
   docker compose exec db mysql -uroot -proot -e "DROP DATABASE partner_test; CREATE DATABASE partner_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL ON partner_test.* TO 'partner'@'%';"
   ```
+- 画面が重い場合：Windows / Mac ではフォルダ共有が遅いため、開発用イメージで OPcache を有効にしています。古いイメージのままなら `docker compose up -d --build` で作り直してください。
 - Docker の起動前に Windows の「仮想マシン プラットフォーム」と WSL が必要です。インストールが止まる場合は、管理者の PowerShell で `wsl --install --no-distribution` を実行して再起動してください。
 
 ### PHP を直接使う場合
