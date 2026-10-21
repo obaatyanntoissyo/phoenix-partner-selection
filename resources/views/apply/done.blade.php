@@ -1,9 +1,12 @@
 @extends('layouts.app')
 @section('title', '応募受付')
 @section('content')
-    <h1>ご応募ありがとうございました</h1>
+    <div class="result ok">
+        <span class="result-icon" aria-hidden="true">✓</span>
+        <h1>ご応募ありがとうございました</h1>
+    </div>
     @if ($done)
-        <p>応募番号：<strong>{{ $done['number'] }}</strong></p>
+        <div class="box"><p>応募番号：<strong>{{ $done['number'] }}</strong></p></div>
         @if ($done['category'] === 'p1' && $done['duplicate'])
             <p>同じメールアドレスでのご応募を受け付けています。今回の内容も記録しました。担当者からのご連絡をお待ちください。</p>
         @elseif ($done['category'] === 'p1')

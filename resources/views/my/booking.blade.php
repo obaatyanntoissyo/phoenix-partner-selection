@@ -15,7 +15,7 @@
     @if ($interview->booking_status === 'confirmed')
         <p>面談日程は確認済みです{{ $interview->interview_at ? '（'.$interview->interview_at->format('Y年n月j日 H:i').'）' : '' }}。</p>
     @endif
-    <form method="post" action="{{ route('my.booking.go') }}">
+    <form method="post" action="{{ route('my.booking.go') }}" class="actions">
         @csrf
         <button type="submit" class="btn primary">{{ $mode === 'form' ? '希望日時の登録フォームへ移動' : '予約ページへ移動' }}</button>
     </form>

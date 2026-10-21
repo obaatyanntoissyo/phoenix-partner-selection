@@ -24,7 +24,7 @@ class EstimateFlowTest extends TestCase
     {
         $this->applyP1()->assertRedirect('/my/conditions');
         $this->get('/my/conditions')->assertOk()
-            ->assertSee('見積もり用の制作条件（別タブで開く）')
+            ->assertSeeText('見積もり用の制作条件（別タブで開く）')
             ->assertSee('未設定（確定後にお知らせします）');
 
         $this->get('/my/estimate')->assertOk();
