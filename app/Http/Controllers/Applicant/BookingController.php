@@ -58,7 +58,7 @@ class BookingController extends Controller
             throw $e;
         }
 
-        return redirect()->route('my.booking')->with('status', '面談日程の予約を承りました。確認のメールをお送りします。');
+        return redirect()->route('my.booking');
     }
 
     public function go(Request $request): RedirectResponse

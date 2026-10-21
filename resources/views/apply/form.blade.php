@@ -3,7 +3,8 @@
 @section('content')
     @if ($category === 'p1')
         <h1>一括制作パートナー 応募フォーム</h1>
-        <div class="box">
+        <p class="lead">Webサイト制作を一括でお任せできるパートナーを募集しています。</p>
+        <div class="box info">
             <p>ディレクション、デザイン、コーディング、サーバー設定・公開、操作マニュアル作成までを、ご本人またはチームで一括対応できる方を募集しています。</p>
             <ul>
                 <li>実務経験3年以上</li>
@@ -14,13 +15,14 @@
         </div>
     @else
         <h1>独自CMS（8341）コーディングパートナー 応募フォーム</h1>
-        <div class="box">
+        <div class="box info">
             <p>弊社の独自CMSのコーディングを継続してご担当いただける方を募集しています。応募後、担当者から面談のご案内をお送りします。</p>
         </div>
     @endif
 
     @include('partials.errors')
 
+    <h2>応募者情報</h2>
     <form method="post" action="{{ $category === 'p1' ? route('apply.p1.store') : route('apply.p2.store') }}" class="form" data-once novalidate>
         @csrf
         <div class="hp" aria-hidden="true"><label>空欄のままにしてください<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>

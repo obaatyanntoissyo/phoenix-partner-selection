@@ -29,10 +29,10 @@
                 <td>{{ \App\Models\Application::CATEGORY_LABELS[$a->category] }}</td>
                 <td>{{ $a->name }}@if ($a->company)<br><span class="small">{{ $a->company }}</span>@endif</td>
                 <td>{{ $a->created_at->format('Y-m-d') }}</td>
-                <td>{{ \App\Models\Application::STATUS_LABELS[$a->status] ?? $a->status }}</td>
-                <td>{{ $a->latestResult ? \App\Models\ScreeningResult::OUTCOME_LABELS[$a->latestResult->outcome] : '―' }}</td>
-                <td>{{ $a->interview ? \App\Models\Interview::BOOKING_LABELS[$a->interview->booking_status] : '―' }}</td>
-                <td>{{ ['failed' => '失敗あり', 'pending' => '未送信あり', 'ok' => '済'][$mailStatus[$a->id] ?? ''] ?? '―' }}</td>
+                <td><span class="badge">{{ \App\Models\Application::STATUS_LABELS[$a->status] ?? $a->status }}</span></td>
+                <td>@if ($a->latestResult)<span @class(['badge', 'ok' => $a->latestResult->outcome === 'passed', 'ng' => $a->latestResult->outcome !== 'passed'])>{{ \App\Models\ScreeningResult::OUTCOME_LABELS[$a->latestResult->outcome] }}</span>@else ―@endif</td>
+                <td>@if ($a->interview)<span @class(['badge', 'ok' => $a->interview->booking_status === 'confirmed', 'info' => in_array($a->interview->booking_status, ['available', 'redirected'], true)])>{{ \App\Models\Interview::BOOKING_LABELS[$a->interview->booking_status] }}</span>@else ―@endif</td>
+                <td>@php($ms = $mailStatus[$a->id] ?? '') @if ($ms)<span @class(['badge', 'err' => $ms === 'failed', 'warn' => $ms === 'pending'])>{{ ['failed' => '失敗あり', 'pending' => '未送信あり', 'ok' => '済'][$ms] }}</span>@else ―@endif</td>
             </tr>
         @empty
             <tr><td colspan="8">該当する応募はありません。</td></tr>

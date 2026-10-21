@@ -2,9 +2,10 @@
 @section('title', '募集条件とモックアップの確認')
 @section('content')
     <h1>募集条件とモックアップの確認</h1>
-    <p>{{ $application->name }} 様（応募番号：{{ $application->number }}）</p>
+    <p class="meta"><span>{{ $application->name }} 様</span><span>応募番号：{{ $application->number }}</span></p>
+    <p class="lead">モックアップと見積条件をご確認のうえ、見積入力へお進みください。</p>
 
-    <section class="box">
+    <section class="box info">
         <h2>募集内容</h2>
         <ul>
             <li>ディレクション、デザイン、コーディング、サーバー設定・公開、操作マニュアル作成までの一括対応が必要です。</li>
@@ -18,7 +19,7 @@
         <h2>見積用モックアップ</h2>
         <ul class="links">
             @foreach ($config->mockup_links as $link)
-                <li><a href="{{ $link['url'] }}" target="_blank" rel="noopener noreferrer">{{ $link['label'] }}（別タブで開く）</a></li>
+                <li><a href="{{ $link['url'] }}" target="_blank" rel="noopener noreferrer">{{ $link['label'] }}<span class="sr-only">（別タブで開く）</span></a></li>
             @endforeach
         </ul>
     </section>
@@ -36,16 +37,18 @@
     <section>
         <h2>見積の項目</h2>
         <p>次の項目ごとに、税別の金額を入力していただきます。</p>
-        <ul>
+        <ul class="item-list">
             @foreach ($items as $item)
-                <li><strong>{{ $item['label'] }}</strong>：{{ $item['description'] }}</li>
+                <li><strong>{{ $item['label'] }}</strong><span>{{ $item['description'] }}</span></li>
             @endforeach
         </ul>
     </section>
 
-    @if ($canEstimate)
-        <p><a class="btn primary" href="{{ route('my.estimate') }}">見積入力へ進む</a></p>
-    @else
-        <p><a class="btn" href="{{ route('my.result') }}">提出結果を見る</a></p>
-    @endif
+    <div class="actions">
+        @if ($canEstimate)
+            <a class="btn primary" href="{{ route('my.estimate') }}">見積入力へ進む</a>
+        @else
+            <a class="btn" href="{{ route('my.result') }}">提出結果を見る</a>
+        @endif
+    </div>
 @endsection

@@ -9,7 +9,10 @@
 </head>
 <body>
 <header class="site-header">
-    <div class="container">株式会社デザインスタジオフェニックス　パートナー募集</div>
+    <div class="container header-inner">
+        <span class="brand-mark" aria-hidden="true">P</span>
+        <span class="brand"><span class="brand-name">株式会社デザインスタジオフェニックス</span><span class="brand-sub">パートナー募集</span></span>
+    </div>
 </header>
 <main class="container" id="main">
     @isset($step)
@@ -18,7 +21,9 @@
     @if (session('status'))
         <p class="notice" role="status">{{ session('status') }}</p>
     @endif
-    @yield('content')
+    <div class="panel">
+        @yield('content')
+    </div>
 </main>
 <footer class="site-footer"><div class="container">株式会社デザインスタジオフェニックス</div></footer>
 <script src="{{ asset('js/app.js') }}" defer></script>

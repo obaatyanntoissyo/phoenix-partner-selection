@@ -2,26 +2,33 @@
 @section('title', 'ホーム')
 @section('content')
     <h1>ホーム</h1>
-    <p>①一括制作 {{ $counts['p1'] }}件 ／ ②8341 {{ $counts['p2'] }}件 ／ 見積提出済み {{ $counts['submitted'] }}件</p>
-    @if ($mailProblems)
-        <p class="warn"><a href="{{ route('admin.applications.index', ['mail' => 'failed']) }}">送信に失敗したメールが {{ $mailProblems }} 件あります</a></p>
-    @endif
+    <div class="stats">
+        <a class="stat" href="{{ route('admin.applications.index', ['category' => 'p1']) }}"><span class="stat-label">①一括制作の応募</span><div class="stat-value">{{ $counts['p1'] }}<span class="stat-unit">件</span></div></a>
+        <a class="stat" href="{{ route('admin.applications.index', ['status' => 'submitted']) }}"><span class="stat-label">見積提出済み</span><div class="stat-value">{{ $counts['submitted'] }}<span class="stat-unit">件</span></div></a>
+        <a class="stat" href="{{ route('admin.applications.index', ['category' => 'p2']) }}"><span class="stat-label">②8341の応募</span><div class="stat-value">{{ $counts['p2'] }}<span class="stat-unit">件</span></div></a>
+        <a class="stat" href="{{ route('admin.applications.index', ['mail' => 'failed']) }}"><span class="stat-label">送信に失敗したメール</span><div class="stat-value {{ $mailProblems ? 'warn' : '' }}">{{ $mailProblems }}<span class="stat-unit">件</span></div></a>
+    </div>
 
+    <section>
     <h2>本番公開前に設定が必要な項目</h2>
     @if ($missing)
         <ul class="missing">@foreach ($missing as $m)<li>{{ $m }}</li>@endforeach</ul>
-        <p><a href="{{ route('admin.settings') }}">設定へ</a></p>
+        <p><a class="btn small-btn" href="{{ route('admin.settings') }}">設定へ</a></p>
     @else
-        <p>未設定の項目はありません。</p>
+        <p><span class="badge ok">OK</span> 未設定の項目はありません。</p>
     @endif
+    </section>
 
+    <section>
     <h2>最近の要対応通知</h2>
     @forelse ($alerts as $alert)
         <p class="small">{{ $alert->created_at->format('Y-m-d H:i') }}　{{ $alert->reason }}</p>
     @empty
         <p>ありません。</p>
     @endforelse
+    </section>
 
+    <section>
     <h2>保存期間に沿った削除</h2>
     @if ($retentionDays)
         <form method="post" action="{{ route('admin.purge') }}" class="form">
@@ -33,4 +40,5 @@
     @else
         <p>保存期間が未設定のため、削除は実行できません（設定画面で指定してください）。</p>
     @endif
+    </section>
 @endsection
