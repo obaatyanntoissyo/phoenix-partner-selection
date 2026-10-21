@@ -16,6 +16,7 @@
                 <a href="{{ route('admin.dashboard') }}">ホーム</a>
                 <a href="{{ route('admin.applications.index') }}">応募一覧</a>
                 <a href="{{ route('admin.applications.create') }}">手動登録</a>
+                <a href="{{ route('admin.slots.index') }}">面談日程</a>
                 <a href="{{ route('admin.settings') }}">設定</a>
                 <a href="{{ route('admin.templates.index') }}">メール文面</a>
                 <form method="post" action="{{ route('admin.logout') }}" class="inline-form">@csrf<button type="submit" class="link">ログアウト</button></form>

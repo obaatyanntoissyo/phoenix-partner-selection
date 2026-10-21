@@ -73,6 +73,11 @@ class Application extends Model
         return $this->hasOne(Interview::class);
     }
 
+    public function activeBooking(): HasOne
+    {
+        return $this->hasOne(InterviewBooking::class, 'active_application_id');
+    }
+
     public function permissionEvents(): HasMany
     {
         return $this->hasMany(PermissionEvent::class)->orderBy('id');

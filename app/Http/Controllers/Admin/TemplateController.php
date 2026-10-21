@@ -23,6 +23,7 @@ class TemplateController extends Controller
         'outcome' => '通過',
         'alert' => 'メール送信失敗',
         'admin_url' => 'https://example.invalid/admin/applications/1',
+        'interview_at' => '2026年11月5日(木) 10:00〜11:00',
     ];
 
     public function index(): View

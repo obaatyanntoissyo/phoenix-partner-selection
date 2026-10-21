@@ -55,7 +55,7 @@ class Defaults
     {
         return [
             'booking_url' => null,
-            'booking_mode' => 'form', // form = 希望日時の登録 / reservation = 空き枠予約サービス
+            'booking_mode' => 'form', // form = 希望日時の登録 / reservation = 空き枠予約サービス / slots = このシステムで空き枠を選ぶ
             'notify_emails' => null,
             'privacy_policy_url' => null,
             'privacy_policy_version' => null,
@@ -211,6 +211,67 @@ TXT,
         ];
     }
 
+    /** 面談予約（空き枠・Googleカレンダー連携）の設定。2026-10-22 追加分のため別のマイグレーションで入れる。 */
+    public static function bookingSettings(): array
+    {
+        return [
+            'booking_lead_hours' => '24', // 何時間後以降の枠から予約できるか
+            'google_calendar_id' => 'primary',
+            'google_meet' => '1', // 予定に Google Meet のリンクを付ける
+            'google_refresh_token' => null, // 暗号化して保存
+            'google_account' => null,
+        ];
+    }
+
+    public static function bookingTemplates(): array
+    {
+        return [
+            'p1_booking_confirmed' => [
+                'subject' => '【フェニックス】面談日程のご予約を承りました',
+                'enabled' => true,
+                'body' => <<<'TXT'
+{name} 様
+
+面談日程のご予約を承りました。
+
+応募番号：{number}
+日時：{interview_at}
+形式：オンライン
+
+オンライン面談の参加URLは、別途メールでお送りします。
+日程の変更をご希望の場合は、下記の問い合わせ先までご連絡ください。
+
+面談は、契約・発注をお約束するものではありません。
+
+■ お問い合わせ
+{contact}
+TXT,
+            ],
+            'p1_booking_cancelled' => [
+                'subject' => '【フェニックス】面談日程のご予約取り消しについて',
+                'enabled' => true,
+                'body' => <<<'TXT'
+{name} 様
+
+お申し込みいただいた面談日程（{interview_at}）のご予約を、担当者の都合により取り消しました。
+大変申し訳ございません。
+
+担当者より改めてご連絡いたします。
+
+応募番号：{number}
+
+■ お問い合わせ
+{contact}
+TXT,
+            ],
+            'admin_booking' => [
+                'subject' => '[応募] 面談予約 {number}：{interview_at}',
+                'enabled' => true,
+                'body' => "面談の予約が入りました。\n\n応募番号：{number}\n日時：{interview_at}\n\n詳細は管理画面で確認してください。\n{admin_url}\n",
+            ],
+        ];
+    }
+
     public static function templateLabels(): array
     {
         return [
@@ -222,6 +283,9 @@ TXT,
             'admin_new_application' => '社内：新規応募',
             'admin_submission' => '社内：見積提出と判定',
             'admin_alert' => '社内：障害・要対応',
+            'p1_booking_confirmed' => '①面談予約の受付',
+            'p1_booking_cancelled' => '①面談予約の取り消し',
+            'admin_booking' => '社内：面談予約',
         ];
     }
 }

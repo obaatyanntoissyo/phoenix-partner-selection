@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\ApplicationActionController;
 use App\Http\Controllers\Admin\ApplicationController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\GoogleCalendarController;
+use App\Http\Controllers\Admin\InterviewSlotController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\Applicant\ApplyController;
@@ -36,6 +38,7 @@ Route::middleware(['applicant', 'throttle:applicant'])->prefix('my')->name('my.'
     Route::get('/result', [MyController::class, 'result'])->name('result');
     Route::get('/booking', [BookingController::class, 'show'])->name('booking');
     Route::post('/booking/go', [BookingController::class, 'go'])->name('booking.go');
+    Route::post('/booking/reserve', [BookingController::class, 'reserve'])->name('booking.reserve');
     Route::get('/booking-url', [BookingController::class, 'url'])->name('booking.url');
 });
 
@@ -73,6 +76,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/mail/{job}/resend', 'resendMail')->name('resend-mail');
             Route::post('/anonymize', 'anonymize')->name('anonymize');
         });
+
+        Route::get('/slots', [InterviewSlotController::class, 'index'])->name('slots.index');
+        Route::post('/slots', [InterviewSlotController::class, 'store'])->name('slots.store');
+        Route::post('/slots/settings', [InterviewSlotController::class, 'updateSettings'])->name('slots.settings');
+        Route::post('/slots/{slot}/delete', [InterviewSlotController::class, 'destroy'])->name('slots.destroy');
+        Route::post('/bookings/{booking}/cancel', [InterviewSlotController::class, 'cancel'])->name('bookings.cancel');
+        Route::post('/bookings/{booking}/retry', [InterviewSlotController::class, 'retry'])->name('bookings.retry');
+        Route::get('/google/connect', [GoogleCalendarController::class, 'connect'])->name('google.connect');
+        Route::get('/google/callback', [GoogleCalendarController::class, 'callback'])->name('google.callback');
+        Route::post('/google/disconnect', [GoogleCalendarController::class, 'disconnect'])->name('google.disconnect');
 
         Route::get('/settings', [SettingsController::class, 'edit'])->name('settings');
         Route::post('/settings/config', [SettingsController::class, 'storeConfig'])->name('settings.config');

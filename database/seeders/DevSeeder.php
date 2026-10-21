@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
- * 開発環境のテストデータ（管理者・テスト予約画面・通知先）。本番では実行できない。
+ * 開発環境のテストデータ（管理者・通知先・面談の空き枠）。本番では実行できない。
  */
 class DevSeeder extends Seeder
 {
@@ -25,5 +25,6 @@ class DevSeeder extends Seeder
 
         AppSetting::put('booking_url', rtrim(config('app.url'), '/').'/dev/booking');
         AppSetting::put('notify_emails', 'recruit-team@example.invalid');
+        $this->call(DevSlotsSeeder::class);
     }
 }

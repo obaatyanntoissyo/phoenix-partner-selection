@@ -18,6 +18,8 @@ class ApplicantFlowException extends RuntimeException
         'config_incomplete' => ['title' => '現在手続きを進められません', 'body' => '現在、お手続きを進められない状態です。担当者へお問い合わせください。', 'status' => 503],
         'booking_unset' => ['title' => '現在手続きを進められません', 'body' => '面談日程の登録先を準備中です。担当者へお問い合わせください。', 'status' => 503],
         'already_submitted' => ['title' => '見積は提出済みです', 'body' => 'この応募の見積はすでに提出されています。', 'status' => 409],
+        'slot_taken' => ['title' => 'この日時は予約できません', 'body' => '選択した日時は、ほかの方の予約が入ったか、受付を締め切りました。別の日時をお選びください。', 'status' => 409],
+        'already_booked' => ['title' => '面談はすでに予約済みです', 'body' => '日程の変更をご希望の場合は、担当者へお問い合わせください。', 'status' => 409],
         'forbidden' => ['title' => 'このページは表示できません', 'body' => 'このページを表示する権限がありません。', 'status' => 403],
     ];
 
