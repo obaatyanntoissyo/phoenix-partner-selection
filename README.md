@@ -41,6 +41,15 @@ docker compose exec app php artisan db:seed --class=DevSeeder   # 開発用管�
 
 ポート 3306・8000・8025 を他のソフトが使っていると起動できません。その場合は該当のソフトを止めてから起動してください。
 
+うまくいかないとき（Windows で確認した事例）：
+
+- `composer install` が `Failed to open stream` や `corrupted zip archive` で止まる場合は、並列ダウンロードを切って再実行してください：`docker compose run --rm -e COMPOSER_MAX_PARALLEL_HTTP=1 composer install`
+- 自動テストが `Table 'partner_test.…' doesn't exist` や `Table '…' already exists` で大量に失敗する場合は、テスト用DBが作りかけで残っています。テスト用DBだけを作り直してください（アプリ本体のデータは消えません）：
+  ```bash
+  docker compose exec db mysql -uroot -proot -e "DROP DATABASE partner_test; CREATE DATABASE partner_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL ON partner_test.* TO 'partner'@'%';"
+  ```
+- Docker の起動前に Windows の「仮想マシン プラットフォーム」と WSL が必要です。インストールが止まる場合は、管理者の PowerShell で `wsl --install --no-distribution` を実行して再起動してください。
+
 ### PHP を直接使う場合
 
 PHP 8.3 以上（拡張：pdo_mysql, mbstring, intl）、Composer、MySQL 8.0 が必要です。
@@ -99,7 +108,8 @@ MySQL のテスト用DB `partner_test` を使います（`phpunit.xml`）。Dock
 - ブラウザ（Chromium・スマートフォン幅）での通し確認：①応募 → 見積入力・一時保存 → 確認 → 提出 → 通過 → 予約案内 → テスト予約画面への移動、不通過者の結果画面と予約URL取得の拒否（403）、入力エラーの表示、管理画面の表示を確認しました。
 - `composer audit`：既知の脆弱性なし。
 - Docker Compose（Linux 上の Docker）での起動：上の手順で起動し、総額800,000円ちょうどの見積が通過して予約案内に進むこと、不通過時に予約URLが取得できないこと（403）、Mailpit に受付・結果・社内通知メールが届くことを確認しました。自動テスト58件も Docker 内で成功しています。
-- **未実施**：Windows・Mac の Docker Desktop での起動、さくらのレンタルサーバへの設置、実際のメールサーバー・予約先との接続。
+- Windows 11 + Docker Desktop 4.96 でも起動し、自動テスト58件の成功を確認しました（2026-10-21）。
+- **未実施**：Mac の Docker Desktop での起動、さくらのレンタルサーバへの設置、実際のメールサーバー・予約先との接続。
 
 ## 設定の変更方法
 
