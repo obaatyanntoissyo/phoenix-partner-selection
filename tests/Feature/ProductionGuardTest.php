@@ -83,7 +83,7 @@ class ProductionGuardTest extends TestCase
         $this->app['env'] = 'production';
         try {
             foreach (['http://localhost:8000/dev/booking', 'https://partner.example.co.jp/dev/booking', 'http://127.0.0.1/x'] as $url) {
-                $this->post('/admin/settings/app', ['booking_mode' => 'form', 'flow_mode' => 'direct', 'booking_url' => $url])->assertSessionHasErrors('booking_url');
+                $this->post('/admin/settings/app', ['booking_mode' => 'form', 'flow_mode' => 'direct', 'reapply_mode' => 'hold', 'booking_url' => $url])->assertSessionHasErrors('booking_url');
             }
             $current = ConfigVersion::current();
             $this->post('/admin/settings/config', [

@@ -185,8 +185,8 @@ class AdminTest extends TestCase
     public function test_settings_validation(): void
     {
         $this->actingAs($this->admin());
-        $this->post('/admin/settings/app', ['booking_mode' => 'form', 'flow_mode' => 'direct', 'notify_emails' => 'ok@example.com, bad'])->assertSessionHasErrors('notify_emails');
-        $this->post('/admin/settings/app', ['booking_mode' => 'form', 'flow_mode' => 'direct', 'booking_url' => 'https://forms.example.com/x', 'retention_days' => '365'])->assertSessionHasNoErrors();
+        $this->post('/admin/settings/app', ['booking_mode' => 'form', 'flow_mode' => 'direct', 'reapply_mode' => 'hold', 'notify_emails' => 'ok@example.com, bad'])->assertSessionHasErrors('notify_emails');
+        $this->post('/admin/settings/app', ['booking_mode' => 'form', 'flow_mode' => 'direct', 'reapply_mode' => 'hold', 'booking_url' => 'https://forms.example.com/x', 'retention_days' => '365'])->assertSessionHasNoErrors();
         $this->assertSame('https://forms.example.com/x', AppSetting::get('booking_url'));
     }
 }

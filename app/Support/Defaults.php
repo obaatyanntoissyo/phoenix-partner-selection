@@ -61,6 +61,7 @@ class Defaults
             'privacy_policy_version' => null,
             'contact_text' => '株式会社デザインスタジオフェニックス 採用担当',
             'flow_mode' => 'direct', // direct = 応募後そのまま見積へ / email = メールのリンクから見積へ
+            'reapply_mode' => 'hold', // hold = 同じメールの再応募は管理者が判断 / direct = 再応募も見積へ
             'retention_days' => null,
         ];
     }

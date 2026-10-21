@@ -100,7 +100,23 @@ class ApplicationIntakeTest extends TestCase
         $this->get('/my/conditions')->assertForbidden();
     }
 
-    /** T13 同じメールで再応募 → 記録は保存し既存へ紐付け、招待は自動発行しない */
+    /** 同じメールで再応募（「見積へ進める」設定）→ 既存へ紐付けたうえで、新しい応募と同じく見積へ進む */
+    public function test_reapplication_with_same_email_goes_to_estimate_when_enabled(): void
+    {
+        AppSetting::put('reapply_mode', 'direct');
+        $this->applyP1();
+        $first = $this->latestApplication();
+        $this->flushSession();
+
+        $this->applyP1(['email' => 'TARO@example.com '])->assertRedirect('/my/conditions');
+        $second = $this->latestApplication();
+
+        $this->assertSame($first->id, $second->linked_application_id);
+        $this->assertSame(1, $second->invitations()->count());
+        $this->get('/my/conditions')->assertOk();
+    }
+
+    /** T13 同じメールで再応募（初期設定「管理者が判断」）→ 記録は保存し既存へ紐付け、招待は自動発行しない */
     public function test_t13_reapplication_with_same_email_is_linked_without_new_invitation(): void
     {
         $this->applyP1();

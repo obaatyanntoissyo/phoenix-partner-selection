@@ -90,6 +90,12 @@
                     <option value="direct" @selected(($settings['flow_mode'] ?? 'direct') === 'direct')>応募後そのまま見積入力へ進む（メールは控え・再開用）</option>
                     <option value="email" @selected(($settings['flow_mode'] ?? '') === 'email')>メールの専用URLから見積入力へ進む</option>
                 </select></div>
+            <div class="field"><label for="reapply_mode">①同じメールアドレスでの再応募</label>
+                <select id="reapply_mode" name="reapply_mode">
+                    <option value="hold" @selected(($settings['reapply_mode'] ?? 'hold') === 'hold')>見積へは進めず、管理者が判断する（「招待の再発行・送信」で案内）</option>
+                    <option value="direct" @selected(($settings['reapply_mode'] ?? '') === 'direct')>新しい応募と同じく見積入力へ進める（前回の応募と紐付けて表示）</option>
+                </select>
+                <p class="small">どちらの場合も、同じメールアドレスからの応募は1日{{ config('partner.max_applications_per_email_per_day') }}回までです。</p></div>
             <div class="field"><label for="retention_days">応募情報の保存期間（日）</label>
                 <input id="retention_days" name="retention_days" type="number" min="1" value="{{ old('retention_days', $settings['retention_days'] ?? '') }}">
                 <p class="small">空欄の間は自動削除・一括削除を行いません。</p></div>

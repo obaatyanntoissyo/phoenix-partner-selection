@@ -92,6 +92,7 @@ class SettingsController extends Controller
             'privacy_policy_version' => ['nullable', 'string', 'max:50'],
             'contact_text' => ['nullable', 'string', 'max:500'],
             'flow_mode' => ['required', 'in:direct,email'],
+            'reapply_mode' => ['required', 'in:direct,hold'],
             'retention_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
         ]);
 
