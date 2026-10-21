@@ -23,7 +23,7 @@ a { color: var(--accent); }
 label, legend { display: block; font-weight: bold; margin-bottom: 4px; }
 label.check { font-weight: normal; display: flex; gap: 8px; align-items: flex-start; }
 label.check input { margin-top: 6px; }
-input[type=text], input[type=email], input[type=tel], input[type=url], input[type=number], input[type=date], input[type=datetime-local], input[type=password], input[type=search], input:not([type]), select, textarea {
+input[type=text], input[type=email], input[type=tel], input[type=url], input[type=number], input[type=date], input[type=time], input[type=datetime-local], input[type=password], input[type=search], input:not([type]), select, textarea {
   width: 100%; max-width: 100%; padding: 8px; font-size: 16px; border: 1px solid #888; border-radius: 4px; font-family: inherit; }
 .inline { display: flex; align-items: center; gap: 8px; }
 .inline input { width: 6em; }
@@ -79,3 +79,10 @@ dl.conditions dd { margin: 0; }
   .estimate thead { display: none; }
 }
 .pagination { display: flex; gap: 16px; margin: 16px 0; }
+fieldset.slot-day { border: 1px solid var(--line); border-radius: 4px; padding: 8px 16px 12px; margin: 0 0 16px; }
+fieldset.slot-day legend { font-weight: bold; padding: 0 4px; }
+fieldset.slot-day label.slot { display: inline-flex; margin: 4px 16px 4px 0; min-height: 44px; align-items: center; }
+fieldset.slot-day label.slot input { margin-top: 0; }
+label.check.inline { display: inline-flex; width: auto; margin: 0 16px 8px 0; align-items: center; }
+label.check.inline input { margin-top: 0; width: auto; }
+.row select { width: auto; }

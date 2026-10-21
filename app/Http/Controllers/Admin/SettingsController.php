@@ -86,7 +86,7 @@ class SettingsController extends Controller
     {
         $data = $request->validate([
             'booking_url' => ['nullable', 'url:https,http', 'max:500'],
-            'booking_mode' => ['required', 'in:form,reservation'],
+            'booking_mode' => ['required', 'in:form,reservation,slots'],
             'notify_emails' => ['nullable', 'string', 'max:1000'],
             'privacy_policy_url' => ['nullable', 'url:https,http', 'max:500'],
             'privacy_policy_version' => ['nullable', 'string', 'max:50'],

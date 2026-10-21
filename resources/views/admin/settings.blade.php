@@ -67,14 +67,16 @@
         <h2>接続先・通知・その他</h2>
         <form method="post" action="{{ route('admin.settings.app') }}" class="form">
             @csrf
-            <div class="field"><label for="booking_url">面談予約先URL（Googleフォームまたは予約サービス）</label>
+            <div class="field"><label for="booking_url">面談予約先URL（Googleフォームまたは外部の予約サービスを使う場合）</label>
                 <input id="booking_url" name="booking_url" type="url" value="{{ old('booking_url', $settings['booking_url'] ?? '') }}">
                 <p class="small">通過者が本人確認済みのときだけ、サーバーから案内します。応募番号などの個人情報はURLに付けません。</p></div>
             <div class="field"><label for="booking_mode">予約先の種類</label>
                 <select id="booking_mode" name="booking_mode">
                     <option value="form" @selected(($settings['booking_mode'] ?? 'form') === 'form')>希望日時を回収するフォーム（Googleフォーム等）</option>
                     <option value="reservation" @selected(($settings['booking_mode'] ?? '') === 'reservation')>空き枠予約サービス</option>
-                </select></div>
+                    <option value="slots" @selected(($settings['booking_mode'] ?? '') === 'slots')>このシステムで空き枠を選ぶ（Googleカレンダーに自動登録）</option>
+                </select>
+                <p class="small">「このシステムで空き枠を選ぶ」の場合、予約先URLは使いません。空き枠とGoogle連携は<a href="{{ route('admin.slots.index') }}">面談日程</a>で設定します。</p></div>
             <div class="field"><label for="notify_emails">社内通知先メール（複数はカンマ区切り）</label>
                 <input id="notify_emails" name="notify_emails" value="{{ old('notify_emails', $settings['notify_emails'] ?? '') }}"></div>
             <div class="field"><label for="contact_text">メールに記載する問い合わせ先</label>

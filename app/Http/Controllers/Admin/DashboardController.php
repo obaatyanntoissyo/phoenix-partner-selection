@@ -8,7 +8,9 @@ use App\Models\AppSetting;
 use App\Models\AuditLog;
 use App\Models\ConfigVersion;
 use App\Models\EmailJob;
+use App\Models\InterviewSlot;
 use App\Services\Anonymizer;
+use App\Services\GoogleCalendar;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -30,7 +32,14 @@ class DashboardController extends Controller
                 $missing[] = '見積条件「'.$item['label'].'」';
             }
         }
-        foreach (['booking_url' => '面談予約先URL', 'notify_emails' => '社内通知先メール', 'privacy_policy_url' => 'プライバシーポリシーURL', 'privacy_policy_version' => 'プライバシーポリシーの版', 'retention_days' => '応募情報の保存期間'] as $key => $label) {
+        $slotsMode = AppSetting::get('booking_mode') === 'slots';
+        if ($slotsMode && ! app(GoogleCalendar::class)->isConnected()) {
+            $missing[] = 'Googleカレンダー連携（面談日程の画面で連携してください）';
+        }
+        if ($slotsMode && ! InterviewSlot::query()->where('starts_at', '>', now())->exists()) {
+            $missing[] = '面談の空き枠（今後の枠がありません）';
+        }
+        foreach (array_filter(['booking_url' => $slotsMode ? null : '面談予約先URL', 'notify_emails' => '社内通知先メール', 'privacy_policy_url' => 'プライバシーポリシーURL', 'privacy_policy_version' => 'プライバシーポリシーの版', 'retention_days' => '応募情報の保存期間']) as $key => $label) {
             if (! AppSetting::get($key)) {
                 $missing[] = $label;
             }
