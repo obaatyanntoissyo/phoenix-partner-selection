@@ -99,22 +99,93 @@ class EstimateFlowTest extends TestCase
         $this->assertSame(self::TEST_CAP, EstimateSubmission::query()->first()->total);
     }
 
-    /** T06 総額が上限＋1円 → 不通過、予約権限なし */
-    public function test_t06_total_over_cap_by_one_yen_fails(): void
+    /** T06 総額が上限＋1円 → 保留（見送りとは表示しない）、予約権限なし、結果は改めてメールで連絡 */
+    public function test_t06_total_over_cap_by_one_yen_is_held_not_rejected(): void
     {
         $this->applyP1();
         $this->submitEstimate(self::TEST_CAP + 1)->assertRedirect('/my/result');
 
         $result = ScreeningResult::query()->firstOrFail();
-        $this->assertSame('failed', $result->outcome);
+        $this->assertSame('held', $result->outcome);
         $this->assertSame(['total_over_cap'], $result->reason_codes);
         $this->assertFalse($this->latestApplication()->interview->access_granted);
+        $this->assertSame(1, EmailJob::query()->where('type', 'p1_result_held')->count());
+        $this->assertSame(0, EmailJob::query()->where('type', 'p1_result_failed')->count());
 
-        $html = $this->get('/my/result')->assertSee('今回の募集条件とは合致しなかった')->getContent();
+        $page = $this->get('/my/result')->assertSee('選考結果は、改めてメールでお送りします');
+        $html = $page->getContent();
+        $this->assertStringNotContainsString('見送り', $html);
+        $this->assertStringNotContainsString('合致しなかった', $html);
         $this->assertStringNotContainsString('面談日程の登録へ進む', $html);
         $this->assertStringNotContainsString('上限', $html);
         $this->assertStringNotContainsString('booking.example.com', $html);
         $this->get('/my/booking')->assertForbidden();
+    }
+
+    /** 金額オーバーでも、経験3年未満・一括対応不可など金額以外の理由があれば不通過 */
+    public function test_over_cap_with_other_reason_is_failed(): void
+    {
+        $this->applyP1(['experience_years' => '2', 'experience_months' => '0']);
+        $this->submitEstimate(self::TEST_CAP + 1);
+
+        $result = ScreeningResult::query()->firstOrFail();
+        $this->assertSame('failed', $result->outcome);
+        $this->assertEqualsCanonicalizing(['experience_under_3y', 'total_over_cap'], $result->reason_codes);
+        $this->assertSame(1, EmailJob::query()->where('type', 'p1_result_failed')->count());
+        $this->get('/my/result')->assertSee('今回の募集条件とは合致しなかった');
+    }
+
+    /** 保留の応募を、管理者が通過として連絡する → 面談予約に進める */
+    public function test_admin_can_pass_a_held_application_and_applicant_can_book(): void
+    {
+        $this->applyP1();
+        $application = $this->latestApplication();
+        $this->submitEstimate(self::TEST_CAP + 1);
+
+        $this->actingAs($this->admin())
+            ->post("/admin/applications/{$application->id}/send-result", ['result' => 'passed', 'reason' => '金額が僅差のため'])
+            ->assertRedirect();
+
+        $result = ScreeningResult::query()->sole();
+        $this->assertSame('passed', $result->outcome);
+        $this->assertContains('admin_decided', $result->reason_codes);
+        $this->assertTrue($application->refresh()->interview->access_granted);
+        $this->assertSame(1, EmailJob::query()->where('type', 'p1_result_passed')->count());
+        $this->assertDatabaseHas('audit_logs', ['action' => 'send_result', 'reason' => '金額が僅差のため']);
+
+        // 同じ操作は二重に送れない（結果は保留ではなくなる）
+        $this->post("/admin/applications/{$application->id}/send-result", ['result' => 'passed', 'reason' => '再操作'])->assertNotFound();
+        $this->assertSame(1, EmailJob::query()->where('type', 'p1_result_passed')->count());
+    }
+
+    /** 保留の応募を、管理者が不通過として連絡する */
+    public function test_admin_can_reject_a_held_application(): void
+    {
+        $this->applyP1();
+        $application = $this->latestApplication();
+        $this->submitEstimate(self::TEST_CAP + 1);
+
+        $this->actingAs($this->admin())
+            ->post("/admin/applications/{$application->id}/send-result", ['result' => 'failed', 'reason' => '予算に合わない'])
+            ->assertRedirect();
+
+        $this->assertSame('failed', ScreeningResult::query()->sole()->outcome);
+        $this->assertFalse($application->refresh()->interview->access_granted);
+        $this->assertSame('declined', $application->interview->stage);
+        $this->assertSame(1, EmailJob::query()->where('type', 'p1_result_failed')->count());
+    }
+
+    /** 保留でない応募には、結果の決定操作ができない */
+    public function test_send_result_requires_held_application(): void
+    {
+        $this->applyP1();
+        $application = $this->latestApplication();
+        $this->submitEstimate(self::TEST_CAP);
+
+        $this->actingAs($this->admin())
+            ->post("/admin/applications/{$application->id}/send-result", ['result' => 'failed', 'reason' => 'x'])
+            ->assertNotFound();
+        $this->assertSame('passed', ScreeningResult::query()->sole()->outcome);
     }
 
     public function test_item_caps_are_applied_only_when_enabled(): void
@@ -189,7 +260,7 @@ class EstimateFlowTest extends TestCase
         $submission = EstimateSubmission::query()->firstOrFail();
         $this->assertSame($attacker->id, $submission->application_id);
         $this->assertSame(self::TEST_CAP + 500_000, $submission->total);
-        $this->assertSame('failed', $submission->result->outcome);
+        $this->assertSame('held', $submission->result->outcome);
         $this->assertSame(0, $victim->submissions()->count());
     }
 
@@ -221,7 +292,7 @@ class EstimateFlowTest extends TestCase
         $this->post('/my/submit', ['submit_key' => str_repeat('b', 40)])->assertRedirect('/my/result');
 
         $this->assertSame(1, EstimateSubmission::query()->count());
-        $this->assertSame('failed', ScreeningResult::query()->sole()->outcome);
+        $this->assertSame('held', ScreeningResult::query()->sole()->outcome);
     }
 
     /** T14 管理者が再提出許可 → 新提出を保存、旧履歴は残る */
@@ -242,7 +313,7 @@ class EstimateFlowTest extends TestCase
         $this->submitEstimate(self::TEST_CAP)->assertRedirect('/my/result');
 
         $results = ScreeningResult::query()->orderBy('id')->pluck('outcome')->all();
-        $this->assertSame(['failed', 'passed'], $results);
+        $this->assertSame(['held', 'passed'], $results);
         $this->assertSame([1, 2], EstimateSubmission::query()->orderBy('id')->pluck('sequence')->all());
         $this->assertSame(self::TEST_CAP + 1, EstimateSubmission::query()->orderBy('id')->first()->total);
         $this->assertDatabaseHas('audit_logs', ['action' => 'allow_resubmission', 'reason' => '金額の入力ミスの申告']);

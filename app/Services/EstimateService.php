@@ -238,7 +238,8 @@ class EstimateService
             if ($outcome === 'passed') {
                 $vars['booking_page_url'] = $this->invitations->inviteUrl($token);
             }
-            $this->mail->enqueue($outcome === 'passed' ? 'p1_result_passed' : 'p1_result_failed', $application, [$application->email], $vars, 'submission:'.$submission->id.':applicant');
+            $resultMail = ['passed' => 'p1_result_passed', 'held' => 'p1_result_held', 'failed' => 'p1_result_failed'][$outcome];
+            $this->mail->enqueue($resultMail, $application, [$application->email], $vars, 'submission:'.$submission->id.':applicant');
             $this->mail->enqueue('admin_submission', $application, AppSetting::notifyEmails(), [
                 'number' => $application->number,
                 'outcome' => ScreeningResult::OUTCOME_LABELS[$outcome],
@@ -287,6 +288,13 @@ class EstimateService
             }
         }
 
-        return [$reasons ? 'failed' : 'passed', array_values(array_unique($reasons))];
+        $reasons = array_values(array_unique($reasons));
+        if (! $reasons) {
+            return ['passed', []];
+        }
+        // 金額だけが理由の場合は、その場で見送りにせず「保留」とする。担当者が内容を見て、改めて結果を連絡する。
+        $onlyMoney = array_diff($reasons, ScreeningResult::MONEY_REASONS) === [];
+
+        return [$onlyMoney ? 'held' : 'failed', $reasons];
     }
 }

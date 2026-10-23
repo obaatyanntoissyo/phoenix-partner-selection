@@ -224,6 +224,32 @@ TXT,
         ];
     }
 
+    /** 金額が基準を超えた応募者（保留）に、その場で出すメール。結果は後から担当者が改めて連絡する。 */
+    public static function resultTemplates(): array
+    {
+        return [
+            'p1_result_held' => [
+                'subject' => '【フェニックス】お見積もりのご提出ありがとうございました',
+                'enabled' => true,
+                'body' => <<<'TXT'
+{name} 様
+
+お見積もりをご提出いただき、ありがとうございました。
+
+応募番号：{number}
+
+内容を確認のうえ、選考結果は改めてメールでご連絡いたします。
+今しばらくお待ちください。
+
+お見積もりのご提出は、契約・発注をお約束するものではありません。
+
+■ お問い合わせ
+{contact}
+TXT,
+            ],
+        ];
+    }
+
     public static function bookingTemplates(): array
     {
         return [
@@ -281,6 +307,7 @@ TXT,
             'p2_receipt' => '②応募受付（自動返信）',
             'p1_result_passed' => '①提出受付・通過',
             'p1_result_failed' => '①提出受付・不通過',
+            'p1_result_held' => '①提出受付・結果は改めて連絡（保留）',
             'admin_new_application' => '社内：新規応募',
             'admin_submission' => '社内：見積提出と判定',
             'admin_alert' => '社内：障害・要対応',

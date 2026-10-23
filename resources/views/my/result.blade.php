@@ -11,6 +11,14 @@
                 <p>ご提示いただいた内容は、今回の面談案内条件を満たしています。次に面談日程をご登録ください。契約・発注の確定ではありません。</p>
             </div>
         </div>
+    @elseif ($held)
+        <div class="box result neutral">
+            <span class="result-icon" aria-hidden="true">i</span>
+            <div>
+                <p class="result-title">選考結果は、改めてメールでお送りします</p>
+                <p>お見積もりをご提出いただき、ありがとうございました。内容を確認のうえ、担当者より選考結果をメールでご連絡します。今しばらくお待ちください。</p>
+            </div>
+        </div>
     @else
         <div class="box result neutral">
             <span class="result-icon" aria-hidden="true">i</span>

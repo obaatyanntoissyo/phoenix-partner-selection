@@ -68,7 +68,7 @@ class AdminTest extends TestCase
         $this->applyP1(['email' => 'new@example.com']);
         $this->assertSame($newVersion->id, $this->latestApplication()->config_version_id);
         $this->submitEstimate(800_000);
-        $this->assertSame('failed', ScreeningResult::query()->latest('id')->first()->outcome);
+        $this->assertSame('held', ScreeningResult::query()->latest('id')->first()->outcome);
         $this->assertSame(500_000, ScreeningResult::query()->latest('id')->first()->criteria['total_cap']);
     }
 

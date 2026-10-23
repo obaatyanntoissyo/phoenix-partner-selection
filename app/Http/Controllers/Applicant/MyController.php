@@ -150,6 +150,7 @@ class MyController extends Controller
         return view('my.result', [
             'application' => $application,
             'passed' => $result->passed(),
+            'held' => $result->held(),
             'bookingAvailable' => (bool) $application->interview?->access_granted,
             'canResubmit' => $application->remainingSubmissions() > 0,
         ]);
