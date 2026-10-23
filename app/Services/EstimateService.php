@@ -122,7 +122,7 @@ class EstimateService
             $errors->add('scope_conditions', '対応範囲・条件は2000文字以内で入力してください。');
         }
         if (mb_strlen($notes) > 2000) {
-            $errors->add('notes', '見積の補足は2000文字以内で入力してください。');
+            $errors->add('notes', '備考は2000文字以内で入力してください。');
         }
         if ($complete && $scope === '') {
             $errors->add('scope_conditions', '対応範囲・条件を入力してください。');
