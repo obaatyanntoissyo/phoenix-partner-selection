@@ -26,7 +26,10 @@ class ApplicationController extends Controller
 {
     public function index(Request $request): View
     {
-        $applications = $this->filtered($request)->with(['latestResult', 'interview'])->latest('id')->paginate(30)->withQueryString();
+        $query = $this->filtered($request)->with(['latestResult', 'interview', 'activeBooking.slot'])->withMax('submissions as latest_total', 'total');
+        // 金額が僅差の応募を探しやすいよう、見積合計の低い順にも並べ替えられる
+        $request->input('sort') === 'total_asc' ? $query->orderByRaw('latest_total is null')->orderBy('latest_total')->orderByDesc('id') : $query->latest('id');
+        $applications = $query->paginate(30)->withQueryString();
         $mailStatus = EmailJob::query()
             ->whereIn('application_id', $applications->pluck('id'))
             ->get(['application_id', 'status'])
@@ -36,13 +39,19 @@ class ApplicationController extends Controller
         return view('admin.applications.index', [
             'applications' => $applications,
             'mailStatus' => $mailStatus,
-            'filters' => $request->only(['category', 'status', 'q', 'mail', 'outcome']),
+            'filters' => $request->only(['category', 'status', 'q', 'mail', 'outcome', 'sort']),
+            'tabCounts' => [
+                'all' => Application::query()->count(),
+                'held' => Application::query()->whereHas('latestResult', fn ($q) => $q->where('outcome', 'held'))->count(),
+                'passed' => Application::query()->whereHas('latestResult', fn ($q) => $q->where('outcome', 'passed'))->count(),
+                'failed' => Application::query()->whereHas('latestResult', fn ($q) => $q->where('outcome', 'failed'))->count(),
+            ],
         ]);
     }
 
     public function show(Application $application): View
     {
-        $application->load(['submissions.result', 'submissions.configVersion', 'results', 'interview', 'permissionEvents', 'emailJobs', 'invitations', 'configVersion', 'linked']);
+        $application->load(['submissions.result', 'submissions.configVersion', 'results', 'interview', 'permissionEvents', 'emailJobs', 'invitations', 'configVersion', 'linked', 'activeBooking.slot']);
 
         return view('admin.applications.show', [
             'application' => $application,

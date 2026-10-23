@@ -8,6 +8,7 @@ use App\Models\AppSetting;
 use App\Models\AuditLog;
 use App\Models\ConfigVersion;
 use App\Models\EmailJob;
+use App\Models\InterviewBooking;
 use App\Models\InterviewSlot;
 use App\Services\Anonymizer;
 use App\Services\GoogleCalendar;
@@ -51,7 +52,11 @@ class DashboardController extends Controller
                 'p1' => Application::query()->where('category', 'p1')->count(),
                 'p2' => Application::query()->where('category', 'p2')->count(),
                 'submitted' => Application::query()->where('status', 'submitted')->count(),
+                'held' => Application::query()->whereHas('latestResult', fn ($q) => $q->where('outcome', 'held'))->count(),
+                'upcoming' => InterviewBooking::query()->where('status', 'active')->whereHas('slot', fn ($q) => $q->where('starts_at', '>', now()))->count(),
             ],
+            'upcomingBookings' => InterviewBooking::query()->where('status', 'active')->whereHas('slot', fn ($q) => $q->where('starts_at', '>', now()))
+                ->with(['slot', 'application'])->get()->sortBy('slot.starts_at')->take(5),
             'mailProblems' => EmailJob::query()->whereIn('status', ['failed', 'dead'])->count(),
             'retentionDays' => AppSetting::get('retention_days'),
             'alerts' => AuditLog::query()->where('action', 'alert')->latest('id')->limit(10)->get(),

@@ -175,6 +175,22 @@ class EstimateFlowTest extends TestCase
         $this->assertSame(1, EmailJob::query()->where('type', 'p1_result_failed')->count());
     }
 
+    /** 管理画面：保留の応募はホームで知らせ、一覧で見積合計の低い順に探せ、詳細で結果を決められる */
+    public function test_admin_screens_surface_held_applications(): void
+    {
+        $this->applyP1();
+        $application = $this->latestApplication();
+        $this->submitEstimate(self::TEST_CAP + 10_000);
+        $this->flushSession();
+        $this->actingAs($this->admin());
+
+        $this->get('/admin')->assertOk()->assertSee('結果の連絡待ちが 1件');
+        $this->get('/admin/applications?outcome=held&sort=total_asc')->assertOk()
+            ->assertSee($application->number)->assertSee('10,000円 超過');
+        $this->get("/admin/applications/{$application->id}")->assertOk()
+            ->assertSee('結果を決めて、応募者に連絡してください')->assertSee('通過として連絡する')->assertSee('不通過として連絡する');
+    }
+
     /** 保留でない応募には、結果の決定操作ができない */
     public function test_send_result_requires_held_application(): void
     {
