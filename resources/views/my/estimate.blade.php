@@ -10,6 +10,7 @@
 
     @php($amounts = $draft?->amounts ?? [])
     @php($hours = $draft?->hours ?? [])
+    @php($rates = $draft?->extra_rates ?? [])
     @php($reasons = $draft?->zero_reasons ?? [])
     @php($agreements = $draft?->agreements ?? [])
     <form method="post" action="{{ route('my.estimate.save') }}" class="form" id="estimate-form" novalidate>
@@ -49,16 +50,55 @@
             </tfoot>
         </table>
 
+        <h2>納期</h2>
+        <div class="field" id="f-delivery_weeks">
+            <label for="delivery_weeks">このモックを作る場合の納期（着手から公開まで） <span class="req">必須</span></label>
+            <span class="hours-input"><input id="delivery_weeks" name="delivery_weeks" type="text" inputmode="numeric" autocomplete="off" class="amount hours"
+                   value="{{ old('delivery_weeks', $draft?->delivery_weeks) }}" @error('delivery_weeks') aria-invalid="true" aria-describedby="e-delivery_weeks" @enderror> 週間</span>
+            <p class="hint">目安はありません。あなた（またはチーム）が、このモックを作る場合に必要な期間を、週で答えてください。</p>
+            @include('partials.field-error', ['name' => 'delivery_weeks'])
+        </div>
+
+        <h2>追加の単価</h2>
+        <p class="hint">金額の判定には使いません。追加や公開後の対応が発生したときの単価を、税別・円で入力してください。</p>
+        <table class="estimate">
+            <tbody>
+            @foreach ($extraRates as $rk => $rlabel)
+                <tr>
+                    <th scope="row"><label for="rate-{{ $rk }}">{{ $rlabel }}</label></th>
+                    <td id="f-extra_rates-{{ $rk }}">
+                        <input id="rate-{{ $rk }}" name="extra_rates[{{ $rk }}]" type="text" inputmode="numeric" autocomplete="off" class="amount"
+                               value="{{ old('extra_rates.'.$rk, $rates[$rk] ?? '') }}" @error('extra_rates.'.$rk) aria-invalid="true" aria-describedby="e-extra_rates-{{ $rk }}" @enderror>
+                        @include('partials.field-error', ['name' => 'extra_rates.'.$rk])
+                    </td>
+                </tr>
+            @endforeach
+            </tbody>
+        </table>
+
         <div class="field" id="f-scope_conditions">
             <label for="scope_conditions">対応範囲・条件 <span class="req">必須</span></label>
             <textarea id="scope_conditions" name="scope_conditions" rows="5" maxlength="2000" @error('scope_conditions') aria-invalid="true" aria-describedby="e-scope_conditions" @enderror>{{ old('scope_conditions', $draft?->scope_conditions) }}</textarea>
-            <p class="hint">提示した見積条件からの作業の除外はできません。追加の提案は「見積の補足」に分けて記入してください。</p>
+            <p class="hint">提示した見積条件からの作業の除外はできません。追加の提案は「別パターンのご提案」に分けて記入してください。</p>
             @include('partials.field-error', ['name' => 'scope_conditions'])
         </div>
         <div class="field" id="f-notes">
-            <label for="notes">見積の補足 <span class="opt">任意</span></label>
-            <textarea id="notes" name="notes" rows="4" maxlength="2000">{{ old('notes', $draft?->notes) }}</textarea>
+            <label for="notes">備考（合計金額になった理由・前提など） <span class="req">必須</span></label>
+            <textarea id="notes" name="notes" rows="5" maxlength="2000" @error('notes') aria-invalid="true" aria-describedby="e-notes" @enderror>{{ old('notes', $draft?->notes) }}</textarea>
+            <p class="hint">この合計金額になった理由、工程ごとの考え方、前提にした条件などを書いてください。</p>
             @include('partials.field-error', ['name' => 'notes'])
+        </div>
+
+        <div class="field" id="f-alt_proposal">
+            <label for="alt_proposal">別パターンのご提案 <span class="opt">任意</span></label>
+            <textarea id="alt_proposal" name="alt_proposal" rows="4" maxlength="2000" @error('alt_proposal') aria-invalid="true" aria-describedby="e-alt_proposal" @enderror>{{ old('alt_proposal', $draft?->alt_proposal) }}</textarea>
+            <p class="hint">条件を変えると金額がどう変わるか（例：機能を絞る、期間を延ばす）があれば書いてください。上の見積条件からの除外は、ここに分けて書きます。</p>
+            @include('partials.field-error', ['name' => 'alt_proposal'])
+            <div id="f-alt_total">
+                <label for="alt_total" class="small">その場合の合計金額（税別・円）<span class="opt">任意</span></label>
+                <input id="alt_total" name="alt_total" type="text" inputmode="numeric" autocomplete="off" class="amount" value="{{ old('alt_total', $draft?->alt_total) }}" @error('alt_total') aria-invalid="true" aria-describedby="e-alt_total" @enderror>
+                @include('partials.field-error', ['name' => 'alt_total'])
+            </div>
         </div>
 
         <fieldset class="field">

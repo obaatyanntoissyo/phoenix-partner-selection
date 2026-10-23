@@ -11,7 +11,8 @@ return new class extends Migration
     public function up(): void
     {
         $current = DB::table('config_versions')->orderByDesc('version_no')->first();
-        if (! $current || ! str_contains((string) $current->scope_items, '求人')) {
+        // 古い求人サイト向けの条件、または担当の分担・納期の回答欄を入れる前の条件のときだけ、新しい版を追加する
+        if (! $current || str_contains((string) $current->scope_items, '担当の分担')) {
             return;
         }
 

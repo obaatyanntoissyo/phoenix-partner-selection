@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ConfigVersion;
 use App\Models\EmailJob;
 use App\Models\EstimateSubmission;
 use App\Models\ScreeningResult;
@@ -25,7 +26,7 @@ class EstimateFlowTest extends TestCase
         $this->applyP1()->assertRedirect('/my/conditions');
         $this->get('/my/conditions')->assertOk()
             ->assertSeeText('見積もり用の制作条件（別タブで開く）')
-            ->assertSee('未設定（確定後にお知らせします）');
+            ->assertSee('目安は示しません');
 
         $this->get('/my/estimate')->assertOk();
         $this->submitEstimate(self::TEST_CAP - 1)->assertRedirect('/my/result');
@@ -277,6 +278,43 @@ class EstimateFlowTest extends TestCase
         $this->post('/my/submit', ['submit_key' => $key])->assertRedirect();
         $design = collect(EstimateSubmission::query()->firstOrFail()->items)->firstWhere('key', 'design');
         $this->assertSame(40, $design['hours']);
+    }
+
+    /** 値が未設定の見積条件は、確定条件として表示せず「未設定」と出す */
+    public function test_unset_scope_item_is_shown_as_unset(): void
+    {
+        $current = ConfigVersion::current();
+        $items = $current->scope_items;
+        $items[] = ['label' => 'テスト用の未設定項目', 'value' => null];
+        ConfigVersion::create(['version_no' => $current->version_no + 1, 'mockup_links' => $current->mockup_links, 'scope_items' => $items,
+            'estimate_items' => $current->estimate_items, 'total_cap' => $current->total_cap, 'item_caps_enabled' => false,
+            'invite_ttl_days' => $current->invite_ttl_days, 'is_test_criteria' => $current->is_test_criteria, 'note' => 'test']);
+
+        $this->applyP1()->assertRedirect('/my/conditions');
+        $this->get('/my/conditions')->assertOk()->assertSee('テスト用の未設定項目')->assertSee('未設定（確定後にお知らせします）');
+    }
+
+    /** 納期・備考・追加の単価は必須。別パターンは任意で、金額だけの入力は不可。提出内容に残る */
+    public function test_delivery_notes_rates_and_alternative_proposal(): void
+    {
+        $this->applyP1();
+        $this->post('/my/estimate', $this->estimateInput(500_000, ['delivery_weeks' => '']) + ['action' => 'confirm'])->assertSessionHasErrors('delivery_weeks');
+        foreach (['0', '1.5', '-2', 'abc', '157'] as $bad) {
+            $this->post('/my/estimate', $this->estimateInput(500_000, ['delivery_weeks' => $bad]) + ['action' => 'confirm'])->assertSessionHasErrors('delivery_weeks');
+        }
+        $this->post('/my/estimate', $this->estimateInput(500_000, ['notes' => '  ']) + ['action' => 'confirm'])->assertSessionHasErrors('notes');
+        $this->post('/my/estimate', $this->estimateInput(500_000, ['extra_rates' => ['extra_page' => '']]) + ['action' => 'confirm'])->assertSessionHasErrors('extra_rates.extra_page');
+        $this->post('/my/estimate', $this->estimateInput(500_000, ['extra_rates' => ['extra_post' => '-1']]) + ['action' => 'confirm'])->assertSessionHasErrors('extra_rates.extra_post');
+        $this->post('/my/estimate', $this->estimateInput(500_000, ['alt_total' => '400000']) + ['action' => 'confirm'])->assertSessionHasErrors('alt_proposal');
+        $this->assertSame(0, EstimateSubmission::query()->count());
+
+        $key = $this->goToConfirm($this->estimateInput(500_000, ['delivery_weeks' => '１０', 'alt_proposal' => '機能を絞る場合', 'alt_total' => '400,000']));
+        $this->post('/my/submit', ['submit_key' => $key])->assertRedirect();
+        $s = EstimateSubmission::query()->firstOrFail();
+        $this->assertSame(10, $s->delivery_weeks);
+        $this->assertSame(30000, $s->extra_rates['extra_page']);
+        $this->assertSame(400000, $s->alt_total);
+        $this->assertSame('機能を絞る場合', $s->alt_proposal);
     }
 
     /** T09 クライアントの合計・passed・応募IDを改変 → サーバーで再計算・認可 */

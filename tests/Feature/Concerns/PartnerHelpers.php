@@ -106,7 +106,9 @@ trait PartnerHelpers
             'hours' => $this->hours(),
             'zero_reasons' => [],
             'scope_conditions' => '見積条件のすべてを含みます。',
-            'notes' => '',
+            'notes' => '各工程を積み上げた金額です。',
+            'delivery_weeks' => '12',
+            'extra_rates' => ['extra_page' => '30000', 'extra_post' => '3000', 'extra_revision' => '10000', 'extra_meeting' => '8000', 'monthly_maintenance' => '20000'],
             'agreements' => ['include_all_scope' => '1', 'full_scope_capable' => '1', 'no_guarantee' => '1'],
         ], $overrides);
     }

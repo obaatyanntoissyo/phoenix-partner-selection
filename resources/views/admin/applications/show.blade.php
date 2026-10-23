@@ -105,7 +105,13 @@
                     @endif
                     <dl class="conditions">
                         <dt>対応範囲・条件</dt><dd class="pre">{{ $s->scope_conditions }}</dd>
-                        <dt>見積の補足</dt><dd class="pre">{{ $s->notes ?: '―' }}</dd>
+                        <dt>納期（着手から公開）</dt><dd>{{ $s->delivery_weeks ? $s->delivery_weeks.' 週間' : '―' }}</dd>
+                        <dt>追加の単価（税別）</dt>
+                        <dd>@if ($s->extra_rates)@foreach (\App\Services\EstimateService::EXTRA_RATES as $rk => $rlabel)<span class="small">{{ $rlabel }}：</span>{{ isset($s->extra_rates[$rk]) ? number_format($s->extra_rates[$rk]).'円' : '―' }}<br>@endforeach @else ― @endif</dd>
+                        <dt>備考（合計の理由・前提）</dt><dd class="pre">{{ $s->notes ?: '―' }}</dd>
+                        <dt>別パターンの提案</dt><dd class="pre">{{ $s->alt_proposal ?: '―' }}@if ($s->alt_total !== null)
+
+合計 {{ number_format($s->alt_total) }}円（税別）@endif</dd>
                     </dl>
                 @empty
                     <p class="empty">見積はまだ提出されていません。</p>

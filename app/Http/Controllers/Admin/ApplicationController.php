@@ -116,7 +116,10 @@ class ApplicationController extends Controller
         foreach ($itemLabels as $label) {
             $header[] = $label.'（想定工数・時間）';
         }
-        array_push($header, '見積提出日時', '判定基準の版', '予約状況', '選考状況');
+        foreach (\App\Services\EstimateService::EXTRA_RATES as $label) {
+            $header[] = $label.'（税別・円）';
+        }
+        array_push($header, '納期（週）', '別パターン合計（税別・円）', '見積提出日時', '判定基準の版', '予約状況', '選考状況');
 
         return response()->streamDownload(function () use ($applications, $itemLabels, $header) {
             $out = fopen('php://output', 'w');
@@ -140,7 +143,11 @@ class ApplicationController extends Controller
                 foreach ($itemLabels as $key => $_) {
                     $row[] = $hours[$key] ?? '';
                 }
+                foreach (array_keys(\App\Services\EstimateService::EXTRA_RATES) as $rk) {
+                    $row[] = $submission?->extra_rates[$rk] ?? '';
+                }
                 array_push($row,
+                    $submission?->delivery_weeks, $submission?->alt_total,
                     $submission?->submitted_at?->format('Y-m-d H:i'),
                     $a->latestResult?->criteria['config_version_no'] ?? '',
                     $a->interview ? Interview::BOOKING_LABELS[$a->interview->booking_status] : '',
