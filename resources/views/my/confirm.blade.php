@@ -14,18 +14,19 @@
 
     <h2>見積内訳</h2>
     <table class="estimate">
-        <thead><tr><th scope="col">工程</th><th scope="col" class="num">金額（税別・円）</th></tr></thead>
+        <thead><tr><th scope="col">工程</th><th scope="col" class="num">想定工数（時間）</th><th scope="col" class="num">金額（税別・円）</th></tr></thead>
         <tbody>
         @foreach ($items as $item)
             <tr>
                 <th scope="row">{{ $item['label'] }}</th>
+                <td class="num">{{ number_format($data['hours'][$item['key']]) }}</td>
                 <td class="num">{{ number_format($data['amounts'][$item['key']]) }}
                     @if ($data['amounts'][$item['key']] === 0)<br><span class="small">理由：{{ $data['zero_reasons'][$item['key']] }}</span>@endif
                 </td>
             </tr>
         @endforeach
         </tbody>
-        <tfoot><tr><th scope="row">合計（税別）</th><td class="num total">{{ number_format($total) }} 円</td></tr></tfoot>
+        <tfoot><tr><th scope="row">合計（税別）</th><td class="num">{{ number_format(array_sum($data['hours'])) }} 時間</td><td class="num total">{{ number_format($total) }} 円</td></tr></tfoot>
     </table>
 
     <h2>対応範囲・条件</h2>

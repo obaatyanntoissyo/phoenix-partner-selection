@@ -253,6 +253,32 @@ class EstimateFlowTest extends TestCase
             ->assertRedirect('/my/confirm');
     }
 
+    /** 想定工数は必須。金額がある工程は1時間以上。小数・マイナス・過大値は拒否し、提出内容に残る */
+    public function test_hours_are_required_and_validated(): void
+    {
+        $this->applyP1();
+        $missing = $this->estimateInput(500_000, ['hours' => ['design' => '']]);
+        $this->post('/my/estimate', $missing + ['action' => 'confirm'])->assertSessionHasErrors('hours.design');
+
+        foreach (['1.5', '-3', 'abc', '10000'] as $bad) {
+            $this->post('/my/estimate', $this->estimateInput(500_000, ['hours' => ['design' => $bad]]) + ['action' => 'confirm'])
+                ->assertSessionHasErrors('hours.design');
+        }
+
+        // 金額があるのに0時間は不可。0円の工程なら0時間でよい
+        $this->post('/my/estimate', $this->estimateInput(500_000, ['hours' => ['design' => '0']]) + ['action' => 'confirm'])
+            ->assertSessionHasErrors('hours.design');
+        $this->post('/my/estimate', $this->estimateInput(500_000, ['amounts' => ['manual' => '0'], 'zero_reasons' => ['manual' => '設計に含む'], 'hours' => ['manual' => '0']]) + ['action' => 'confirm'])
+            ->assertRedirect('/my/confirm');
+        $this->assertSame(0, EstimateSubmission::query()->count());
+
+        // 全角数字も受け付け、提出した内容に工数が残る
+        $key = $this->goToConfirm($this->estimateInput(500_000, ['hours' => ['design' => '４０']]));
+        $this->post('/my/submit', ['submit_key' => $key])->assertRedirect();
+        $design = collect(EstimateSubmission::query()->firstOrFail()->items)->firstWhere('key', 'design');
+        $this->assertSame(40, $design['hours']);
+    }
+
     /** T09 クライアントの合計・passed・応募IDを改変 → サーバーで再計算・認可 */
     public function test_t09_client_side_tampering_is_ignored(): void
     {

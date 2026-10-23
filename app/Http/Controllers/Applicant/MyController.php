@@ -64,7 +64,7 @@ class MyController extends Controller
             return $redirect;
         }
         $toConfirm = $request->input('action') === 'confirm';
-        $checked = $this->estimates->validate($application->configVersion, $request->only(['amounts', 'zero_reasons', 'scope_conditions', 'notes', 'agreements']), $toConfirm);
+        $checked = $this->estimates->validate($application->configVersion, $request->only(['amounts', 'hours', 'zero_reasons', 'scope_conditions', 'notes', 'agreements']), $toConfirm);
 
         // 形式の誤りがある値は保存しない。入力値は画面に残して修正してもらう。
         $formatErrors = $toConfirm ? $this->estimates->validate($application->configVersion, $request->all(), false)['errors'] : $checked['errors'];
@@ -87,7 +87,7 @@ class MyController extends Controller
             return $redirect;
         }
         $draft = $application->draft;
-        $checked = $this->estimates->validate($application->configVersion, $draft ? $draft->only(['amounts', 'zero_reasons', 'scope_conditions', 'notes']) + [
+        $checked = $this->estimates->validate($application->configVersion, $draft ? $draft->only(['amounts', 'hours', 'zero_reasons', 'scope_conditions', 'notes']) + [
             'agreements' => array_map(fn ($v) => $v ? '1' : '0', $draft->agreements ?? []),
         ] : [], true);
         if ($checked['errors']->isNotEmpty()) {

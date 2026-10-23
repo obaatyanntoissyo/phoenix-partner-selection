@@ -3,17 +3,19 @@
 @section('content')
     <h1>見積入力</h1>
     <p>金額はすべて<strong>税別・日本円の整数</strong>で入力してください。0円の工程には、理由（例：「デザインに含む」）が必要です。対応しないという意味での0円は入力しないでください。</p>
+    <p>各工程の<strong>想定工数（時間）</strong>も入力してください。金額の根拠を確認するためのもので、整数（時間）で入力します。</p>
     <p class="hint">途中で「一時保存」すると、専用URLからいつでも再開できます。判定はこのページでは行わず、最後の「提出」のときに行います。</p>
 
     @include('partials.errors')
 
     @php($amounts = $draft?->amounts ?? [])
+    @php($hours = $draft?->hours ?? [])
     @php($reasons = $draft?->zero_reasons ?? [])
     @php($agreements = $draft?->agreements ?? [])
     <form method="post" action="{{ route('my.estimate.save') }}" class="form" id="estimate-form" novalidate>
         @csrf
         <table class="estimate">
-            <thead><tr><th scope="col">工程</th><th scope="col">金額（税別・円）</th></tr></thead>
+            <thead><tr><th scope="col">工程</th><th scope="col">金額（税別・円）と想定工数（時間）</th></tr></thead>
             <tbody>
             @foreach ($items as $item)
                 @php($k = $item['key'])
@@ -26,6 +28,12 @@
                         <input id="amount-{{ $k }}" name="amounts[{{ $k }}]" type="text" inputmode="numeric" autocomplete="off" class="amount" data-amount
                                value="{{ old('amounts.'.$k, $amounts[$k] ?? '') }}" @error('amounts.'.$k) aria-invalid="true" aria-describedby="e-amounts-{{ $k }}" @enderror>
                         @include('partials.field-error', ['name' => 'amounts.'.$k])
+                        <div id="f-hours-{{ $k }}" class="hours-row">
+                            <label for="hours-{{ $k }}" class="small">想定工数（時間）<span class="req">必須</span></label>
+                            <span class="hours-input"><input id="hours-{{ $k }}" name="hours[{{ $k }}]" type="text" inputmode="numeric" autocomplete="off" class="amount hours"
+                                   value="{{ old('hours.'.$k, $hours[$k] ?? '') }}" @error('hours.'.$k) aria-invalid="true" aria-describedby="e-hours-{{ $k }}" @enderror> 時間</span>
+                            @include('partials.field-error', ['name' => 'hours.'.$k])
+                        </div>
                         <div id="f-zero_reasons-{{ $k }}">
                             <label for="reason-{{ $k }}" class="small">0円の場合の理由</label>
                             <input id="reason-{{ $k }}" name="zero_reasons[{{ $k }}]" type="text" maxlength="200" value="{{ old('zero_reasons.'.$k, $reasons[$k] ?? '') }}" @error('zero_reasons.'.$k) aria-invalid="true" aria-describedby="e-zero_reasons-{{ $k }}" @enderror>

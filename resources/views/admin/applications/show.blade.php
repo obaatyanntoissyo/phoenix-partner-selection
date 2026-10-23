@@ -86,13 +86,15 @@
                 @forelse ($application->submissions as $s)
                     <h3>提出 {{ $s->sequence }} 回目（{{ $s->submitted_at->format('Y年n月j日 H:i') }}・募集設定 第{{ $s->configVersion->version_no }}版）</h3>
                     <table class="list">
-                        <thead><tr><th>工程</th><th class="num">金額（税別・円）</th><th>0円の理由</th></tr></thead>
+                        <thead><tr><th>工程</th><th class="num">想定工数</th><th class="num">金額（税別・円）</th><th class="num">時間あたり</th><th>0円の理由</th></tr></thead>
                         <tbody>
                         @foreach ($s->items as $item)
-                            <tr><td>{{ $item['label'] }}</td><td class="num">{{ number_format($item['amount']) }}</td><td>{{ $item['zero_reason'] }}</td></tr>
+                            @php($h = $item['hours'] ?? null)
+                            <tr><td>{{ $item['label'] }}</td><td class="num">{{ $h !== null ? number_format($h).'時間' : '―' }}</td><td class="num">{{ number_format($item['amount']) }}</td><td class="num">{{ $h ? number_format((int) round($item['amount'] / $h)).'円' : '―' }}</td><td>{{ $item['zero_reason'] }}</td></tr>
                         @endforeach
                         </tbody>
-                        <tfoot><tr><th>合計</th><td class="num total-cell">{{ number_format($s->total) }}</td><td></td></tr></tfoot>
+                        @php($totalHours = array_sum(array_column($s->items, 'hours')))
+                        <tfoot><tr><th>合計</th><td class="num">{{ $totalHours ? number_format($totalHours).'時間' : '―' }}</td><td class="num total-cell">{{ number_format($s->total) }}</td><td class="num">{{ $totalHours ? number_format((int) round($s->total / $totalHours)).'円' : '―' }}</td><td></td></tr></tfoot>
                     </table>
                     @if ($s->result)
                         <p class="judge">

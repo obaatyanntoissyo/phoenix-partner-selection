@@ -93,10 +93,17 @@ trait PartnerHelpers
         return $amounts;
     }
 
+    /** 想定工数の入力値（すべて10時間） */
+    protected function hours(int $each = 10): array
+    {
+        return array_fill_keys(array_column(ConfigVersion::current()->estimate_items, 'key'), (string) $each);
+    }
+
     protected function estimateInput(int $total, array $overrides = []): array
     {
         return array_replace_recursive([
             'amounts' => $this->amounts($total),
+            'hours' => $this->hours(),
             'zero_reasons' => [],
             'scope_conditions' => '見積条件のすべてを含みます。',
             'notes' => '',

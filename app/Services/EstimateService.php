@@ -19,6 +19,8 @@ class EstimateService
 {
     public const MAX_ITEM_AMOUNT = 100_000_000;
 
+    public const MAX_ITEM_HOURS = 9_999;
+
     public const AGREEMENTS = [
         'include_all_scope' => '指定された見積範囲をすべて含む',
         'full_scope_capable' => 'すべての工程を本人またはチームで一括対応できる',
@@ -46,9 +48,11 @@ class EstimateService
     {
         $errors = new MessageBag;
         $amounts = [];
+        $hours = [];
         $zeroReasons = [];
         $total = 0;
         $rawAmounts = is_array($input['amounts'] ?? null) ? $input['amounts'] : [];
+        $rawHours = is_array($input['hours'] ?? null) ? $input['hours'] : [];
         $rawReasons = is_array($input['zero_reasons'] ?? null) ? $input['zero_reasons'] : [];
 
         foreach ($config->estimate_items as $item) {
@@ -71,6 +75,22 @@ class EstimateService
             } else {
                 $amounts[$key] = (int) $value;
                 $total += (int) $value;
+            }
+
+            $hourValue = self::normalizeAmount($rawHours[$key] ?? '');
+            if ($hourValue === '') {
+                $hours[$key] = null;
+                if ($complete) {
+                    $errors->add("hours.$key", "{$label}の想定工数（時間）を入力してください。");
+                }
+            } elseif (! preg_match('/^\d{1,5}$/', $hourValue) || (int) $hourValue > self::MAX_ITEM_HOURS) {
+                $hours[$key] = null;
+                $errors->add("hours.$key", "{$label}の想定工数は、0以上の整数（時間）で、".number_format(self::MAX_ITEM_HOURS).'時間以下で入力してください。');
+            } else {
+                $hours[$key] = (int) $hourValue;
+                if ($complete && $amounts[$key] !== null && $amounts[$key] > 0 && $hours[$key] < 1) {
+                    $errors->add("hours.$key", "{$label}に金額があるため、想定工数は1時間以上で入力してください。");
+                }
             }
 
             if (mb_strlen($reason) > 200) {
@@ -110,6 +130,7 @@ class EstimateService
         return [
             'data' => [
                 'amounts' => $amounts,
+                'hours' => $hours,
                 'zero_reasons' => $zeroReasons,
                 'scope_conditions' => $scope !== '' ? $scope : null,
                 'notes' => $notes !== '' ? $notes : null,
@@ -171,7 +192,7 @@ class EstimateService
 
             $config = $this->requireJudgeableConfig($application);
             $draft = $application->draft;
-            $checked = $this->validate($config, $draft ? $draft->only(['amounts', 'zero_reasons', 'scope_conditions', 'notes']) + [
+            $checked = $this->validate($config, $draft ? $draft->only(['amounts', 'hours', 'zero_reasons', 'scope_conditions', 'notes']) + [
                 'agreements' => array_map(fn ($v) => $v ? '1' : '0', $draft->agreements ?? []),
             ] : [], true);
             if ($checked['errors']->isNotEmpty()) {
@@ -184,6 +205,7 @@ class EstimateService
                     'key' => $item['key'],
                     'label' => $item['label'],
                     'amount' => $checked['data']['amounts'][$item['key']],
+                    'hours' => $checked['data']['hours'][$item['key']],
                     'zero_reason' => $checked['data']['zero_reasons'][$item['key']],
                 ];
             }

@@ -336,3 +336,10 @@ details.day > summary { cursor: pointer; padding: 10px 0; display: flex; flex-wr
 .slot-list { list-style: none; margin: 0; padding: 0 0 8px; }
 .slot-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 6px 0; border-top: 1px solid var(--line); margin: 0; }
 .slot-time { font-variant-numeric: tabular-nums; min-width: 8em; }
+
+/* 見積入力：想定工数 */
+.hours-row { margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.hours-row .field-error, .hours-row .error { flex-basis: 100%; }
+.estimate .amount.hours { width: 8em; font-size: 16px; }
+.estimate td .req { margin-left: 6px; }
+.hours-input { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }

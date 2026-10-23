@@ -113,6 +113,9 @@ class ApplicationController extends Controller
         foreach ($itemLabels as $label) {
             $header[] = $label.'（税別・円）';
         }
+        foreach ($itemLabels as $label) {
+            $header[] = $label.'（想定工数・時間）';
+        }
         array_push($header, '見積提出日時', '判定基準の版', '予約状況', '選考状況');
 
         return response()->streamDownload(function () use ($applications, $itemLabels, $header) {
@@ -122,6 +125,7 @@ class ApplicationController extends Controller
             foreach ($applications as $a) {
                 $submission = $a->submissions->last();
                 $amounts = $submission ? collect($submission->items)->pluck('amount', 'key') : collect();
+                $hours = $submission ? collect($submission->items)->pluck('hours', 'key') : collect();
                 $row = [
                     $a->number, Application::CATEGORY_LABELS[$a->category], $a->created_at->format('Y-m-d H:i'),
                     $a->name, $a->company, $a->email, $a->phone, $a->prefecture, $a->experienceMonths(), $a->monthly_hours,
@@ -132,6 +136,9 @@ class ApplicationController extends Controller
                 ];
                 foreach ($itemLabels as $key => $_) {
                     $row[] = $amounts[$key] ?? '';
+                }
+                foreach ($itemLabels as $key => $_) {
+                    $row[] = $hours[$key] ?? '';
                 }
                 array_push($row,
                     $submission?->submitted_at?->format('Y-m-d H:i'),
