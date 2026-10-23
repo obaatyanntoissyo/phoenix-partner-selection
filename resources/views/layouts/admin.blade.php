@@ -16,8 +16,8 @@
         </span>
         @auth
             <nav class="admin-nav" aria-label="管理メニュー">
-                @foreach (['admin.dashboard' => 'ホーム', 'admin.applications.index' => '応募一覧', 'admin.applications.create' => '手動登録', 'admin.slots.index' => '面談日程', 'admin.settings' => '設定', 'admin.templates.index' => 'メール文面'] as $route => $label)
-                    @php($active = request()->routeIs($route) || ($route === 'admin.applications.index' && request()->routeIs('admin.applications.show')) || ($route === 'admin.templates.index' && request()->routeIs('admin.templates.*')))
+                @foreach (['admin.dashboard' => 'ホーム', 'admin.applications.index' => '応募一覧', 'admin.slots.index' => '面談日程', 'admin.templates.index' => 'メール文面', 'admin.settings' => '設定'] as $route => $label)
+                    @php($active = request()->routeIs($route) || ($route === 'admin.applications.index' && request()->routeIs('admin.applications.show', 'admin.applications.create', 'admin.applications.preview')) || ($route === 'admin.templates.index' && request()->routeIs('admin.templates.*')))
                     <a href="{{ route($route) }}" @class(['active' => $active]) @if ($active) aria-current="page" @endif>{{ $label }}</a>
                 @endforeach
                 <form method="post" action="{{ route('admin.logout') }}" class="inline-form">@csrf<button type="submit" class="link">ログアウト</button></form>

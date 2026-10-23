@@ -53,6 +53,7 @@ class MyController extends Controller
             'application' => $application,
             'items' => $application->configVersion->publicEstimateItems(),
             'draft' => $draft,
+            'extraRates' => EstimateService::EXTRA_RATES,
             'agreementLabels' => EstimateService::AGREEMENTS,
         ]);
     }
@@ -64,7 +65,7 @@ class MyController extends Controller
             return $redirect;
         }
         $toConfirm = $request->input('action') === 'confirm';
-        $checked = $this->estimates->validate($application->configVersion, $request->only(['amounts', 'zero_reasons', 'scope_conditions', 'notes', 'agreements']), $toConfirm);
+        $checked = $this->estimates->validate($application->configVersion, $request->only([...EstimateService::FIELDS, 'agreements']), $toConfirm);
 
         // 形式の誤りがある値は保存しない。入力値は画面に残して修正してもらう。
         $formatErrors = $toConfirm ? $this->estimates->validate($application->configVersion, $request->all(), false)['errors'] : $checked['errors'];
@@ -87,7 +88,7 @@ class MyController extends Controller
             return $redirect;
         }
         $draft = $application->draft;
-        $checked = $this->estimates->validate($application->configVersion, $draft ? $draft->only(['amounts', 'zero_reasons', 'scope_conditions', 'notes']) + [
+        $checked = $this->estimates->validate($application->configVersion, $draft ? $draft->only(EstimateService::FIELDS) + [
             'agreements' => array_map(fn ($v) => $v ? '1' : '0', $draft->agreements ?? []),
         ] : [], true);
         if ($checked['errors']->isNotEmpty()) {
@@ -102,6 +103,7 @@ class MyController extends Controller
             'items' => $application->configVersion->publicEstimateItems(),
             'data' => $checked['data'],
             'total' => $checked['total'],
+            'extraRates' => EstimateService::EXTRA_RATES,
             'agreementLabels' => EstimateService::AGREEMENTS,
             'submitKey' => $key,
         ]);
@@ -150,6 +152,7 @@ class MyController extends Controller
         return view('my.result', [
             'application' => $application,
             'passed' => $result->passed(),
+            'held' => $result->held(),
             'bookingAvailable' => (bool) $application->interview?->access_granted,
             'canResubmit' => $application->remainingSubmissions() > 0,
         ]);

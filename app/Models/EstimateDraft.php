@@ -10,6 +10,6 @@ class EstimateDraft extends Model
 
     protected function casts(): array
     {
-        return ['amounts' => 'array', 'zero_reasons' => 'array', 'agreements' => 'array'];
+        return ['amounts' => 'array', 'hours' => 'array', 'extra_rates' => 'array', 'zero_reasons' => 'array', 'agreements' => 'array'];
     }
 }

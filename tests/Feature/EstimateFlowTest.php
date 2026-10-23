@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ConfigVersion;
 use App\Models\EmailJob;
 use App\Models\EstimateSubmission;
 use App\Models\ScreeningResult;
@@ -25,7 +26,7 @@ class EstimateFlowTest extends TestCase
         $this->applyP1()->assertRedirect('/my/conditions');
         $this->get('/my/conditions')->assertOk()
             ->assertSeeText('見積もり用の制作条件（別タブで開く）')
-            ->assertSee('未設定（確定後にお知らせします）');
+            ->assertSee('目安は示しません');
 
         $this->get('/my/estimate')->assertOk();
         $this->submitEstimate(self::TEST_CAP - 1)->assertRedirect('/my/result');
@@ -99,22 +100,109 @@ class EstimateFlowTest extends TestCase
         $this->assertSame(self::TEST_CAP, EstimateSubmission::query()->first()->total);
     }
 
-    /** T06 総額が上限＋1円 → 不通過、予約権限なし */
-    public function test_t06_total_over_cap_by_one_yen_fails(): void
+    /** T06 総額が上限＋1円 → 保留（見送りとは表示しない）、予約権限なし、結果は改めてメールで連絡 */
+    public function test_t06_total_over_cap_by_one_yen_is_held_not_rejected(): void
     {
         $this->applyP1();
         $this->submitEstimate(self::TEST_CAP + 1)->assertRedirect('/my/result');
 
         $result = ScreeningResult::query()->firstOrFail();
-        $this->assertSame('failed', $result->outcome);
+        $this->assertSame('held', $result->outcome);
         $this->assertSame(['total_over_cap'], $result->reason_codes);
         $this->assertFalse($this->latestApplication()->interview->access_granted);
+        $this->assertSame(1, EmailJob::query()->where('type', 'p1_result_held')->count());
+        $this->assertSame(0, EmailJob::query()->where('type', 'p1_result_failed')->count());
 
-        $html = $this->get('/my/result')->assertSee('今回の募集条件とは合致しなかった')->getContent();
+        $page = $this->get('/my/result')->assertSee('選考結果は、改めてメールでお送りします');
+        $html = $page->getContent();
+        $this->assertStringNotContainsString('見送り', $html);
+        $this->assertStringNotContainsString('合致しなかった', $html);
         $this->assertStringNotContainsString('面談日程の登録へ進む', $html);
         $this->assertStringNotContainsString('上限', $html);
         $this->assertStringNotContainsString('booking.example.com', $html);
         $this->get('/my/booking')->assertForbidden();
+    }
+
+    /** 金額オーバーでも、経験3年未満・一括対応不可など金額以外の理由があれば不通過 */
+    public function test_over_cap_with_other_reason_is_failed(): void
+    {
+        $this->applyP1(['experience_years' => '2', 'experience_months' => '0']);
+        $this->submitEstimate(self::TEST_CAP + 1);
+
+        $result = ScreeningResult::query()->firstOrFail();
+        $this->assertSame('failed', $result->outcome);
+        $this->assertEqualsCanonicalizing(['experience_under_3y', 'total_over_cap'], $result->reason_codes);
+        $this->assertSame(1, EmailJob::query()->where('type', 'p1_result_failed')->count());
+        $this->get('/my/result')->assertSee('今回の募集条件とは合致しなかった');
+    }
+
+    /** 保留の応募を、管理者が通過として連絡する → 面談予約に進める */
+    public function test_admin_can_pass_a_held_application_and_applicant_can_book(): void
+    {
+        $this->applyP1();
+        $application = $this->latestApplication();
+        $this->submitEstimate(self::TEST_CAP + 1);
+
+        $this->actingAs($this->admin())
+            ->post("/admin/applications/{$application->id}/send-result", ['result' => 'passed', 'reason' => '金額が僅差のため'])
+            ->assertRedirect();
+
+        $result = ScreeningResult::query()->sole();
+        $this->assertSame('passed', $result->outcome);
+        $this->assertContains('admin_decided', $result->reason_codes);
+        $this->assertTrue($application->refresh()->interview->access_granted);
+        $this->assertSame(1, EmailJob::query()->where('type', 'p1_result_passed')->count());
+        $this->assertDatabaseHas('audit_logs', ['action' => 'send_result', 'reason' => '金額が僅差のため']);
+
+        // 同じ操作は二重に送れない（結果は保留ではなくなる）
+        $this->post("/admin/applications/{$application->id}/send-result", ['result' => 'passed', 'reason' => '再操作'])->assertNotFound();
+        $this->assertSame(1, EmailJob::query()->where('type', 'p1_result_passed')->count());
+    }
+
+    /** 保留の応募を、管理者が不通過として連絡する */
+    public function test_admin_can_reject_a_held_application(): void
+    {
+        $this->applyP1();
+        $application = $this->latestApplication();
+        $this->submitEstimate(self::TEST_CAP + 1);
+
+        $this->actingAs($this->admin())
+            ->post("/admin/applications/{$application->id}/send-result", ['result' => 'failed', 'reason' => '予算に合わない'])
+            ->assertRedirect();
+
+        $this->assertSame('failed', ScreeningResult::query()->sole()->outcome);
+        $this->assertFalse($application->refresh()->interview->access_granted);
+        $this->assertSame('declined', $application->interview->stage);
+        $this->assertSame(1, EmailJob::query()->where('type', 'p1_result_failed')->count());
+    }
+
+    /** 管理画面：保留の応募はホームで知らせ、一覧で見積合計の低い順に探せ、詳細で結果を決められる */
+    public function test_admin_screens_surface_held_applications(): void
+    {
+        $this->applyP1();
+        $application = $this->latestApplication();
+        $this->submitEstimate(self::TEST_CAP + 10_000);
+        $this->flushSession();
+        $this->actingAs($this->admin());
+
+        $this->get('/admin')->assertOk()->assertSee('結果の連絡待ちが 1件');
+        $this->get('/admin/applications?outcome=held&sort=total_asc')->assertOk()
+            ->assertSee($application->number)->assertSee('10,000円 超過');
+        $this->get("/admin/applications/{$application->id}")->assertOk()
+            ->assertSee('結果を決めて、応募者に連絡してください')->assertSee('通過として連絡する')->assertSee('不通過として連絡する');
+    }
+
+    /** 保留でない応募には、結果の決定操作ができない */
+    public function test_send_result_requires_held_application(): void
+    {
+        $this->applyP1();
+        $application = $this->latestApplication();
+        $this->submitEstimate(self::TEST_CAP);
+
+        $this->actingAs($this->admin())
+            ->post("/admin/applications/{$application->id}/send-result", ['result' => 'failed', 'reason' => 'x'])
+            ->assertNotFound();
+        $this->assertSame('passed', ScreeningResult::query()->sole()->outcome);
     }
 
     public function test_item_caps_are_applied_only_when_enabled(): void
@@ -166,6 +254,69 @@ class EstimateFlowTest extends TestCase
             ->assertRedirect('/my/confirm');
     }
 
+    /** 想定工数は必須。金額がある工程は1時間以上。小数・マイナス・過大値は拒否し、提出内容に残る */
+    public function test_hours_are_required_and_validated(): void
+    {
+        $this->applyP1();
+        $missing = $this->estimateInput(500_000, ['hours' => ['design' => '']]);
+        $this->post('/my/estimate', $missing + ['action' => 'confirm'])->assertSessionHasErrors('hours.design');
+
+        foreach (['1.5', '-3', 'abc', '10000'] as $bad) {
+            $this->post('/my/estimate', $this->estimateInput(500_000, ['hours' => ['design' => $bad]]) + ['action' => 'confirm'])
+                ->assertSessionHasErrors('hours.design');
+        }
+
+        // 金額があるのに0時間は不可。0円の工程なら0時間でよい
+        $this->post('/my/estimate', $this->estimateInput(500_000, ['hours' => ['design' => '0']]) + ['action' => 'confirm'])
+            ->assertSessionHasErrors('hours.design');
+        $this->post('/my/estimate', $this->estimateInput(500_000, ['amounts' => ['manual' => '0'], 'zero_reasons' => ['manual' => '設計に含む'], 'hours' => ['manual' => '0']]) + ['action' => 'confirm'])
+            ->assertRedirect('/my/confirm');
+        $this->assertSame(0, EstimateSubmission::query()->count());
+
+        // 全角数字も受け付け、提出した内容に工数が残る
+        $key = $this->goToConfirm($this->estimateInput(500_000, ['hours' => ['design' => '４０']]));
+        $this->post('/my/submit', ['submit_key' => $key])->assertRedirect();
+        $design = collect(EstimateSubmission::query()->firstOrFail()->items)->firstWhere('key', 'design');
+        $this->assertSame(40, $design['hours']);
+    }
+
+    /** 値が未設定の見積条件は、確定条件として表示せず「未設定」と出す */
+    public function test_unset_scope_item_is_shown_as_unset(): void
+    {
+        $current = ConfigVersion::current();
+        $items = $current->scope_items;
+        $items[] = ['label' => 'テスト用の未設定項目', 'value' => null];
+        ConfigVersion::create(['version_no' => $current->version_no + 1, 'mockup_links' => $current->mockup_links, 'scope_items' => $items,
+            'estimate_items' => $current->estimate_items, 'total_cap' => $current->total_cap, 'item_caps_enabled' => false,
+            'invite_ttl_days' => $current->invite_ttl_days, 'is_test_criteria' => $current->is_test_criteria, 'note' => 'test']);
+
+        $this->applyP1()->assertRedirect('/my/conditions');
+        $this->get('/my/conditions')->assertOk()->assertSee('テスト用の未設定項目')->assertSee('未設定（確定後にお知らせします）');
+    }
+
+    /** 納期・備考・追加の単価は必須。別パターンは任意で、金額だけの入力は不可。提出内容に残る */
+    public function test_delivery_notes_rates_and_alternative_proposal(): void
+    {
+        $this->applyP1();
+        $this->post('/my/estimate', $this->estimateInput(500_000, ['delivery_weeks' => '']) + ['action' => 'confirm'])->assertSessionHasErrors('delivery_weeks');
+        foreach (['0', '1.5', '-2', 'abc', '157'] as $bad) {
+            $this->post('/my/estimate', $this->estimateInput(500_000, ['delivery_weeks' => $bad]) + ['action' => 'confirm'])->assertSessionHasErrors('delivery_weeks');
+        }
+        $this->post('/my/estimate', $this->estimateInput(500_000, ['notes' => '  ']) + ['action' => 'confirm'])->assertSessionHasErrors('notes');
+        $this->post('/my/estimate', $this->estimateInput(500_000, ['extra_rates' => ['extra_page' => '']]) + ['action' => 'confirm'])->assertSessionHasErrors('extra_rates.extra_page');
+        $this->post('/my/estimate', $this->estimateInput(500_000, ['extra_rates' => ['extra_post' => '-1']]) + ['action' => 'confirm'])->assertSessionHasErrors('extra_rates.extra_post');
+        $this->post('/my/estimate', $this->estimateInput(500_000, ['alt_total' => '400000']) + ['action' => 'confirm'])->assertSessionHasErrors('alt_proposal');
+        $this->assertSame(0, EstimateSubmission::query()->count());
+
+        $key = $this->goToConfirm($this->estimateInput(500_000, ['delivery_weeks' => '１０', 'alt_proposal' => '機能を絞る場合', 'alt_total' => '400,000']));
+        $this->post('/my/submit', ['submit_key' => $key])->assertRedirect();
+        $s = EstimateSubmission::query()->firstOrFail();
+        $this->assertSame(10, $s->delivery_weeks);
+        $this->assertSame(30000, $s->extra_rates['extra_page']);
+        $this->assertSame(400000, $s->alt_total);
+        $this->assertSame('機能を絞る場合', $s->alt_proposal);
+    }
+
     /** T09 クライアントの合計・passed・応募IDを改変 → サーバーで再計算・認可 */
     public function test_t09_client_side_tampering_is_ignored(): void
     {
@@ -189,7 +340,7 @@ class EstimateFlowTest extends TestCase
         $submission = EstimateSubmission::query()->firstOrFail();
         $this->assertSame($attacker->id, $submission->application_id);
         $this->assertSame(self::TEST_CAP + 500_000, $submission->total);
-        $this->assertSame('failed', $submission->result->outcome);
+        $this->assertSame('held', $submission->result->outcome);
         $this->assertSame(0, $victim->submissions()->count());
     }
 
@@ -221,7 +372,7 @@ class EstimateFlowTest extends TestCase
         $this->post('/my/submit', ['submit_key' => str_repeat('b', 40)])->assertRedirect('/my/result');
 
         $this->assertSame(1, EstimateSubmission::query()->count());
-        $this->assertSame('failed', ScreeningResult::query()->sole()->outcome);
+        $this->assertSame('held', ScreeningResult::query()->sole()->outcome);
     }
 
     /** T14 管理者が再提出許可 → 新提出を保存、旧履歴は残る */
@@ -242,7 +393,7 @@ class EstimateFlowTest extends TestCase
         $this->submitEstimate(self::TEST_CAP)->assertRedirect('/my/result');
 
         $results = ScreeningResult::query()->orderBy('id')->pluck('outcome')->all();
-        $this->assertSame(['failed', 'passed'], $results);
+        $this->assertSame(['held', 'passed'], $results);
         $this->assertSame([1, 2], EstimateSubmission::query()->orderBy('id')->pluck('sequence')->all());
         $this->assertSame(self::TEST_CAP + 1, EstimateSubmission::query()->orderBy('id')->first()->total);
         $this->assertDatabaseHas('audit_logs', ['action' => 'allow_resubmission', 'reason' => '金額の入力ミスの申告']);
