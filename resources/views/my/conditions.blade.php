@@ -29,7 +29,7 @@
         <dl class="conditions">
             @foreach ($config->scope_items as $item)
                 <dt>{{ $item['label'] }}</dt>
-                <dd>@if ($item['value'] === null)<span class="unset">未設定（確定後にお知らせします）</span>@else{{ $item['value'] }}@endif</dd>
+                <dd class="pre">@if ($item['value'] === null)<span class="unset">未設定（確定後にお知らせします）</span>@else{{ $item['value'] }}@endif</dd>
             @endforeach
         </dl>
     </section>
