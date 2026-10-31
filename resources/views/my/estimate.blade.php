@@ -85,7 +85,7 @@
         <div class="field" id="f-notes">
             <label for="notes">備考（合計金額になった理由・前提など） <span class="req">必須</span></label>
             <textarea id="notes" name="notes" rows="5" maxlength="2000" @error('notes') aria-invalid="true" aria-describedby="e-notes" @enderror>{{ old('notes', $draft?->notes) }}</textarea>
-            <p class="hint">この合計金額になった理由、工程ごとの考え方、前提にした条件などを書いてください。</p>
+            <p class="hint">この合計金額になった理由、工程ごとの考え方、前提にした条件などを書いてください。10項目に当てはまらない内容や、補足したいことも、すべてここに書いてください。</p>
             @include('partials.field-error', ['name' => 'notes'])
         </div>
 
