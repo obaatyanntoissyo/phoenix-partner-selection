@@ -70,6 +70,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/reinvite', 'reinvite')->name('reinvite');
             Route::post('/revoke-invites', 'revokeInvites')->name('revoke-invites');
             Route::post('/allow-resubmission', 'allowResubmission')->name('allow-resubmission');
+            Route::post('/send-result', 'sendResult')->name('send-result');
             Route::post('/grant-booking', 'grantBooking')->name('grant-booking');
             Route::post('/revoke-booking', 'revokeBooking')->name('revoke-booking');
             Route::post('/interview', 'updateInterview')->name('interview');

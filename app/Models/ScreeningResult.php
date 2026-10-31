@@ -20,7 +20,11 @@ class ScreeningResult extends Model
         'scope_not_included' => '指定範囲をすべて含んでいない',
         'total_over_cap' => '総額が上限を超過',
         'item_over_cap' => '工程別上限を超過',
+        'admin_decided' => '管理者が結果を決定',
     ];
+
+    /** この理由だけのときは「不通過」とせず「保留」にする（金額が基準を超えた場合）。 */
+    public const MONEY_REASONS = ['total_over_cap', 'item_over_cap'];
 
     protected $guarded = ['id'];
 
@@ -37,5 +41,10 @@ class ScreeningResult extends Model
     public function passed(): bool
     {
         return $this->outcome === 'passed';
+    }
+
+    public function held(): bool
+    {
+        return $this->outcome === 'held';
     }
 }

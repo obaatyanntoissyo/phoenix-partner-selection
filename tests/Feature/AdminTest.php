@@ -68,7 +68,7 @@ class AdminTest extends TestCase
         $this->applyP1(['email' => 'new@example.com']);
         $this->assertSame($newVersion->id, $this->latestApplication()->config_version_id);
         $this->submitEstimate(800_000);
-        $this->assertSame('failed', ScreeningResult::query()->latest('id')->first()->outcome);
+        $this->assertSame('held', ScreeningResult::query()->latest('id')->first()->outcome);
         $this->assertSame(500_000, ScreeningResult::query()->latest('id')->first()->criteria['total_cap']);
     }
 
@@ -127,7 +127,7 @@ class AdminTest extends TestCase
         $this->flushSession();
         $this->actingAs($this->admin());
 
-        $this->get('/admin')->assertOk()->assertSee('本番公開前に設定が必要な項目')->assertSee('テスト用の仮基準');
+        $this->get('/admin')->assertOk()->assertSee('公開前に設定が必要な項目')->assertSee('テスト用の仮基準');
         $this->get('/admin/applications?category=p1&q=山田')->assertOk()->assertSee($application->number);
         $this->get('/admin/applications?outcome=failed')->assertOk()->assertDontSee($application->number);
         $this->get("/admin/applications/{$application->id}")->assertOk()->assertSee('通過')->assertSee('300,000');

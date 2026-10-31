@@ -14,7 +14,7 @@ class EstimateSubmission extends Model
 
     protected function casts(): array
     {
-        return ['items' => 'array', 'agreements' => 'array', 'submitted_at' => 'datetime', 'total' => 'integer'];
+        return ['items' => 'array', 'extra_rates' => 'array', 'agreements' => 'array', 'submitted_at' => 'datetime', 'total' => 'integer'];
     }
 
     public function result(): HasOne

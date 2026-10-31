@@ -14,24 +14,38 @@
 
     <h2>見積内訳</h2>
     <table class="estimate">
-        <thead><tr><th scope="col">工程</th><th scope="col" class="num">金額（税別・円）</th></tr></thead>
+        <thead><tr><th scope="col">工程</th><th scope="col" class="num">想定工数（時間）</th><th scope="col" class="num">金額（税別・円）</th></tr></thead>
         <tbody>
         @foreach ($items as $item)
             <tr>
                 <th scope="row">{{ $item['label'] }}</th>
+                <td class="num">{{ number_format($data['hours'][$item['key']]) }}</td>
                 <td class="num">{{ number_format($data['amounts'][$item['key']]) }}
                     @if ($data['amounts'][$item['key']] === 0)<br><span class="small">理由：{{ $data['zero_reasons'][$item['key']] }}</span>@endif
                 </td>
             </tr>
         @endforeach
         </tbody>
-        <tfoot><tr><th scope="row">合計（税別）</th><td class="num total">{{ number_format($total) }} 円</td></tr></tfoot>
+        <tfoot><tr><th scope="row">合計（税別）</th><td class="num">{{ number_format(array_sum($data['hours'])) }} 時間</td><td class="num total">{{ number_format($total) }} 円</td></tr></tfoot>
     </table>
+
+    <h2>納期</h2>
+    <p>{{ $data['delivery_weeks'] }} 週間（着手から公開まで）</p>
+
+    <h2>追加の単価（税別・円）</h2>
+    <dl class="conditions compact">
+        @foreach ($extraRates as $rk => $rlabel)
+            <dt>{{ $rlabel }}</dt><dd>{{ number_format($data['extra_rates'][$rk]) }} 円</dd>
+        @endforeach
+    </dl>
 
     <h2>対応範囲・条件</h2>
     <p class="pre">{{ $data['scope_conditions'] }}</p>
-    <h2>見積の補足</h2>
-    <p class="pre">{{ $data['notes'] ?: '―' }}</p>
+    <h2>備考（合計金額の理由・前提）</h2>
+    <p class="pre">{{ $data['notes'] }}</p>
+    <h2>別パターンのご提案</h2>
+    <p class="pre">{{ $data['alt_proposal'] ?: '―' }}@if ($data['alt_total'] !== null)
+（合計 {{ number_format($data['alt_total']) }} 円・税別）@endif</p>
 
     <h2>確認事項</h2>
     <ul>

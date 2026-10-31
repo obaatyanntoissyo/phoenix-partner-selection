@@ -79,6 +79,40 @@ class ApplicationActionController extends Controller
         return back()->with('status', '面談予約への案内を手動で許可しました。');
     }
 
+    /** 保留（金額が基準を超えた応募）に、担当者が結果を決めて個別に連絡する。 */
+    public function sendResult(Request $request, Application $application): RedirectResponse
+    {
+        abort_unless($application->isP1() && ! $application->anonymized_at, 404);
+        $data = $request->validate([
+            'result' => ['required', Rule::in(['passed', 'failed'])],
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+        $latest = $application->latestResult;
+        abort_unless($latest && $latest->held(), 404);
+
+        DB::transaction(function () use ($application, $latest, $data) {
+            $passed = $data['result'] === 'passed';
+            $latest->update(['outcome' => $data['result'], 'reason_codes' => array_values(array_unique([...$latest->reason_codes, 'admin_decided']))]);
+            $interview = Interview::query()->firstOrCreate(['application_id' => $application->id]);
+            $vars = ['name' => $application->name, 'number' => $application->number];
+            if ($passed) {
+                $interview->update(['access_granted' => true, 'booking_status' => $interview->booking_status === 'not_guided' ? 'available' : $interview->booking_status]);
+                PermissionEvent::create(['application_id' => $application->id, 'action' => 'manual_grant', 'reason' => '保留から通過に決定：'.$data['reason'], 'admin_id' => $this->adminId()]);
+                // 本人用URLをメールに載せるため、招待を発行し直す（旧URLは失効）
+                $token = $this->invitations->issue($application, $this->adminId());
+                $vars['booking_page_url'] = $this->invitations->inviteUrl($token);
+            } else {
+                $interview->update(['access_granted' => false, 'stage' => 'declined']);
+            }
+            $this->mail->enqueue($passed ? 'p1_result_passed' : 'p1_result_failed', $application, [$application->email], $vars, 'admin-result:'.$latest->id.':'.$data['result'], $this->adminId());
+            AuditLog::record('send_result', $application, $data['reason'], ['result' => $data['result']]);
+        });
+
+        return back()->with('status', $data['result'] === 'passed'
+            ? '通過として結果メールを送信待ちにしました。応募者は面談の予約に進めます。'
+            : '不通過として結果メールを送信待ちにしました。');
+    }
+
     /** 予約権限の取消。本アプリ内の権限だけを失効し、外部の既存予約は取り消さない。 */
     public function revokeBooking(Request $request, Application $application): RedirectResponse
     {
